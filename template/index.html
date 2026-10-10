@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyFlow — Study Planner</title>
+<style>
+:root{--ink:#25466d;--muted:#7186a0;--blue:#4f8fe8;--line:#e0eafa;--pale:#edf5ff;--white:#fff;--page-bg:#e8f4ff;--page-bg-2:#e4efff;--card-bg:#ffffffed;--text-color:#25466d}*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--text-color);background:linear-gradient(135deg,var(--page-bg),#f8fbff 52%,var(--page-bg-2));min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:235px 1fr;min-height:100vh}aside{padding:22px 14px;background:#ffffffd9;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:24px}.brand{display:flex;align-items:center;gap:11px;padding:0 8px}.hat{border:1px solid #4f8fe8;border-radius:13px;width:44px;height:44px;display:grid;place-items:center;background:linear-gradient(135deg,#f5faff,#e1efff);color:#2878d4;padding:7px}.hat svg{width:29px;height:29px;display:block}.brand b{font-size:20px}.brand small{display:block;color:#8195ad;margin-top:3px}.label{font-size:10px;letter-spacing:1.5px;color:#8ea1b8;font-weight:bold;padding:0 12px;margin-bottom:8px}nav{display:grid;gap:5px}.nav{border:0;background:transparent;color:#617995;text-align:left;padding:7px 10px;border-radius:16px;font-weight:600;display:flex;align-items:center;gap:10px;transition:background .18s ease,color .18s ease,transform .18s ease}.nav-icon{flex:0 0 36px;width:36px;height:36px;border-radius:13px;display:inline-grid;place-items:center;background:#f1f6ff;color:#6c91c2;font-size:17px;box-shadow:inset 0 0 0 1px #e4edfb;transition:background .18s ease,color .18s ease,border-radius .18s ease,box-shadow .18s ease}.nav:hover{background:#f4f8ff;color:#2e6cb5}.nav:hover .nav-icon{border-radius:15px;background:#e6f1ff;color:#377bc7}.nav.active{background:linear-gradient(100deg,#e1efff,#f3f8ff);color:#2e6cb5}.nav.active .nav-icon{background:linear-gradient(135deg,#d6eaff,#c3ddff);color:#2878d4;border-radius:14px;box-shadow:inset 0 0 0 1px #c7defb,0 3px 8px #4f8fe814}.aside-note{margin-top:auto;padding:14px;border-radius:14px;background:linear-gradient(135deg,#e8f3ff,#d9eaff);font-size:12px;color:#5c7ca1;line-height:1.5}main{padding:30px clamp(18px,4vw,48px);min-width:0}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;gap:15px}.eyebrow{font-size:10px;letter-spacing:1.7px;color:#7e9cbe;font-weight:bold;margin-bottom:7px}h1{font-size:32px;letter-spacing:-.8px;margin:0}h2,h3,p{margin-top:0}.subtitle{font-size:14px;color:var(--muted);margin-top:7px}.date{font-size:12px;color:#6482a4;background:#ffffffc9;border:1px solid var(--line);padding:10px 13px;border-radius:12px}.page{display:none}.page.active{display:block}.hero{padding:26px;border-radius:20px;background:linear-gradient(120deg,#dceeff,#b9d8ff 55%,#9dc3fb);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 9px 25px #6c9ed51a}.hero h2{font-size:25px;margin-bottom:7px}.hero p{color:#53769c;font-size:14px;margin-bottom:0;line-height:1.6}.hero-mark{font-size:48px;opacity:.65}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px}.stat,.card,.class-card{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 8px 22px #497db30d}.stat small{color:#7c90a8}.num{font-size:28px;font-weight:800;margin-top:12px}.columns{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}.card-head,.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}.card h3{font-size:16px;margin-bottom:0}.muted{font-size:13px;color:var(--muted)}.task-list,.list{display:grid;gap:9px}.task,.item{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #edf2f9;background:#fbfdff;border-radius:11px}.task input{accent-color:var(--blue)}.task-info{flex:1}.task-title{font-size:13px;font-weight:700}.meta{font-size:11px;color:#899bb0;margin-top:4px}.tag{font-size:10px;background:#e8f2ff;color:#4b7fb9;padding:5px 8px;border-radius:7px;white-space:nowrap}.tag.test{background:#fff1dd;color:#a8752f}.tag.priority-high{background:#ffe7ed;color:#b64d69}.tag.priority-medium{background:#fff2d9;color:#a8752f}.tag.priority-low{background:#e4f7ed;color:#43856b}.btn{border:0;background:linear-gradient(120deg,color-mix(in srgb,var(--blue),white 20%),var(--blue));color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:bold}.btn.secondary{background:#edf5ff;color:#467ab8;border:1px solid #dceafb;box-shadow:none}.text-btn{border:0;background:none;color:#4d88d4;font-size:12px;font-weight:bold}.class-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.class-card{padding:17px}.class-icon{background:#e8f2ff;color:#4f8bd8;width:38px;height:38px;display:grid;place-items:center;border-radius:11px}.class-top{display:flex;justify-content:space-between;align-items:center}.grade{font-size:25px;font-weight:800}.class-name{font-weight:bold;margin:14px 0 5px}.progress{height:6px;background:#edf3fa;border-radius:10px;margin-top:14px;overflow:hidden}.progress span{height:100%;display:block;background:linear-gradient(90deg,color-mix(in srgb,var(--blue),white 45%),var(--blue))}.filters{display:flex;gap:8px;flex-wrap:wrap}.field{border:1px solid #dce7f4;background:#fff;border-radius:9px;padding:10px;color:#365574;min-width:0}.item{justify-content:space-between;padding:15px}.item h4{font-size:14px;margin:0 0 5px}.item p{font-size:12px;color:#8799ae;margin:0}.small{border:1px solid #dce9f7;background:#f7fbff;color:#5c83b3;border-radius:8px;padding:7px 9px;font-size:11px}.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.weekday{text-align:center;color:#879bb3;font-size:11px;padding:8px}.day{background:#fff;border:1px solid #e5edf7;border-radius:9px;min-height:65px;padding:7px;font-size:12px}.day.today{border:2px solid #79aef0;background:#f3f8ff}.dot{display:block;background:#8cbaff;height:5px;width:25px;border-radius:5px;margin-top:6px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:13px 10px;border-bottom:1px solid #edf2f8}th{color:#8799ae;font-size:10px;text-transform:uppercase;letter-spacing:.7px}.notice{padding:14px;border:1px solid #d9eaff;background:#eff7ff;border-radius:12px;color:#5e7fa4;font-size:13px;line-height:1.6}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid label{font-size:12px;color:#68809c;display:grid;gap:6px}.wide{grid-column:1/-1}.empty{text-align:center;padding:25px;color:#8a9bb0;font-size:13px}.secret{background:linear-gradient(135deg,#e3f0ff,#c1dcff);border:1px solid #c9def8;border-radius:20px;padding:28px}.secret-panel{background:#ffffffc9;border:1px solid white;border-radius:14px;padding:18px;margin-top:15px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#254d7c;color:white;padding:12px 18px;border-radius:11px;display:none;z-index:5}.modal-bg{display:none;position:fixed;inset:0;background:#17335366;place-items:center;padding:20px;z-index:4}.modal-bg.show{display:grid}.modal{width:min(520px,100%);background:#fff;border-radius:18px;padding:23px}.modal h2{font-size:21px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}@media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.class-grid{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}}@media(max-width:700px){.app{grid-template-columns:1fr}aside{padding:12px;border-right:0;border-bottom:1px solid var(--line);gap:12px}.aside-note{display:none}.label{display:none}nav{display:flex;overflow:auto} .nav{white-space:nowrap;padding:6px 9px}.nav-icon{flex-basis:32px;width:32px;height:32px;border-radius:11px}main{padding:22px 14px}.date{display:none}.hero-mark{display:none}.class-grid{grid-template-columns:1fr 1fr}.calendar{gap:3px}.day{min-height:48px;padding:4px}.weekday{font-size:9px}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}}@media(max-width:430px){.class-grid{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:13px}.num{font-size:24px}}
+
+/* Soft, cute polish: rounded corners, gentle pastel details, and tiny sparkles */
+:root{--line:#dce9fb;--muted:#7f91aa;--pale:#f2f7ff}
+body{background:radial-gradient(ellipse at 8% 0%,#ffffffb8 0,transparent 34%),linear-gradient(135deg,var(--page-bg),#fbfcff 48%,var(--page-bg-2))}
+aside{background:#ffffffd9;backdrop-filter:blur(12px)}
+.brand b{letter-spacing:-.6px}.brand small{font-size:11px;letter-spacing:.15px}
+.hat{border:2px solid #4f8fe8;border-radius:15px;box-shadow:0 4px 12px #4f8fe826;transition:transform .2s,box-shadow .2s}.hat:hover{transform:translateY(-2px) rotate(-3deg);box-shadow:0 7px 16px #4f8fe83b}
+.nav{border-radius:13px;transition:background .18s,transform .18s}.nav:hover{transform:translateX(2px)}
+.nav.active{box-shadow:inset 3px 0 #6aa4f2}
+main{position:relative}.eyebrow{letter-spacing:2px}
+h1{letter-spacing:-1.1px}
+.hero{position:relative;overflow:hidden;border:1px solid #ffffff9c;border-radius:24px;background:linear-gradient(120deg,#eaf4ff,#d8eaff 52%,#c9e0ff);box-shadow:0 12px 30px #6c9ed51c}
+.hero:after{content:'✦  ·  ✧';position:absolute;right:22px;top:13px;color:#ffffffc9;font-size:22px;letter-spacing:7px;pointer-events:none}
+.hero h2{letter-spacing:-.6px}.hero-mark{filter:drop-shadow(0 5px 6px #6c9ed522)}
+.stat,.card,.class-card{border-radius:20px;border-color:#e1ebfa;box-shadow:0 7px 20px #547db00b;transition:transform .18s,box-shadow .18s,border-color .18s}
+.stat:hover,.class-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px #547db018;border-color:#cbdffb}
+.card-head h3,.card h3{letter-spacing:-.2px}
+.task,.item{border-radius:14px;border-color:#e8eff9;background:linear-gradient(120deg,#fff,#fbfdff)}
+.tag{border-radius:999px;padding:5px 9px}
+.btn{border-radius:12px;box-shadow:0 4px 10px #4f8fe81c;transition:transform .15s,box-shadow .15s}.btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px #4f8fe82b}.btn.secondary{border-radius:12px}
+.field{border-radius:12px;outline:none;transition:border-color .15s,box-shadow .15s}.field:focus{border-color:#8db8f1;box-shadow:0 0 0 3px #8db8f126}
+.class-icon{border-radius:13px;box-shadow:inset 0 0 0 1px #d8e8ff}
+.progress{border-radius:999px}.day{border-radius:12px}.day.today{box-shadow:0 3px 10px #79aef026}
+.aside-note{border:1px solid #ffffffa6;border-radius:17px;box-shadow:inset 0 1px #ffffff8c}
+.secret,.secret-panel,.modal{border-radius:22px}
+.toast{border-radius:999px;box-shadow:0 8px 24px #254d7c2b}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;scroll-behavior:auto!important}}
+
+.assistant-quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.assistant-quick .btn{font-size:12px}.assistant-chat{display:grid;gap:12px;max-height:390px;overflow:auto;padding:4px 2px 12px}.assistant-message{max-width:92%;padding:14px 16px;border-radius:16px;line-height:1.65;font-size:13px;white-space:normal;overflow-wrap:anywhere}.assistant-message p{margin:7px 0 0}.assistant-message ul,.assistant-message ol{margin:8px 0;padding-left:22px}.assistant-message li{margin:4px 0}.assistant-message.bot{background:#eff6ff;border:1px solid #dceaff;justify-self:start}.assistant-message.user{background:#dcecff;border:1px solid #c9e0ff;justify-self:end}.assistant-form{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.assistant-form textarea{resize:vertical;width:100%;line-height:1.5}.assistant-message .guide-title{font-weight:800;color:#2f68aa;margin-top:8px}.assistant-message .guide-title:first-child{margin-top:0}@media(max-width:600px){.assistant-form{grid-template-columns:1fr}.assistant-form .btn{justify-self:end}}
+
+/* Flashcards, Focus Timer and color presets */
+.deck-card{cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.deck-card.selected{border-color:#8db8f1;box-shadow:0 0 0 3px #8db8f126}
+.flash{width:100%;min-height:230px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(135deg,#fff,#f3f8ff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px;text-align:center;color:inherit;transition:transform .18s,box-shadow .18s}
+.flash:hover{transform:translateY(-2px);box-shadow:0 10px 24px #547db018}
+.flash.back{background:linear-gradient(135deg,#eaf4ff,#d8eaff)}
+.flash-side{font-size:10px;letter-spacing:1.7px;color:#7e9cbe;font-weight:bold}
+.flash-text{font-size:24px;font-weight:800;letter-spacing:-.4px;overflow-wrap:anywhere}
+.flash-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{text-align:left;padding:14px;border-radius:14px;border:1px solid #e8eff9;background:linear-gradient(120deg,#fff,#fbfdff);color:inherit;font-weight:600;font-size:13px;overflow-wrap:anywhere;transition:border-color .15s}
+.opt:hover:not(:disabled){border-color:#8db8f1}
+.opt.right{border-color:#7cc9a4;background:#e4f7ed;color:#2f7357}
+.opt.wrong{border-color:#eaa3b6;background:#ffe7ed;color:#9c3d57}
+.opt:disabled{cursor:default}
+.bulk{margin-bottom:15px;font-size:13px}.bulk summary{cursor:pointer;color:#4d88d4;font-weight:bold;font-size:12px}
+.bulk textarea{width:100%;min-height:90px;margin:10px 0 8px;resize:vertical}
+.seg{display:inline-flex;gap:4px;padding:4px;background:#edf5ff;border:1px solid #dceafb;border-radius:14px;flex-wrap:wrap;justify-content:center}
+.seg button{border:0;background:transparent;color:#5c83b3;font-weight:bold;font-size:12px;padding:8px 12px;border-radius:10px}
+.seg button.on{background:#fff;color:var(--text-color);box-shadow:0 2px 6px #4f8fe81f}
+.focus-card{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.ring{position:relative;width:230px;max-width:100%;aspect-ratio:1}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9}
+.ring .track{stroke:#edf3fa}
+.ring .prog{stroke:var(--blue);stroke-linecap:round;transition:stroke-dashoffset .3s linear}
+.ring-label{position:absolute;inset:0;display:grid;place-content:center;gap:4px}
+.ring-label b{font-size:46px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.focus-controls{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.focus-controls label{font-size:12px;color:#68809c;display:grid;gap:6px;text-align:left;min-width:150px;max-width:100%}
+.mini-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.mini-stats div{background:#f6faff;border:1px solid #edf2f9;border-radius:12px;padding:10px}
+.mini-stats b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:120px;margin-top:8px}
+.bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:10px;color:#899bb0;font-variant-numeric:tabular-nums}
+.bar i{display:block;width:100%;max-width:24px;border-radius:7px 7px 3px 3px;background:color-mix(in srgb,var(--blue),white 55%)}
+.bar.now i{background:var(--blue)}
+.swatch-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.preset{display:flex;align-items:center;gap:8px;border:1px solid #dce9f7;background:#f7fbff;color:#5c83b3;border-radius:999px;padding:5px 12px 5px 5px;font-size:12px;font-weight:bold;transition:transform .15s}
+.preset:hover{transform:translateY(-1px)}
+.preset i{width:22px;height:22px;border-radius:50%;display:block;box-shadow:inset 0 0 0 2px #ffffffb0}
+@media(max-width:600px){.opts{grid-template-columns:1fr}.flash-text{font-size:20px}}
+
+/* Secret Room games */
+.game-tabs{margin-top:6px}
+.game-tabs button{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 6px}
+.game-ico{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;flex:none;background:#f1f6ff;color:#2878d4;box-shadow:inset 0 0 0 1px #d3e4fa;transition:background .18s,box-shadow .18s}
+.game-ico svg{width:17px;height:17px;display:block}
+.game-tabs button.on .game-ico{background:linear-gradient(135deg,#d6eaff,#c3ddff);box-shadow:inset 0 0 0 1px #b9d6fa,0 3px 8px #4f8fe81f}
+.clicker{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
+.book-wrap{position:relative;display:inline-block;margin-top:14px}
+.big-book{width:170px;height:170px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#fff,#fbeedd 60%,#f1d6b4);font-size:96px;line-height:1;box-shadow:0 12px 30px #4f8fe833;transition:transform .08s}
+.big-book:hover{transform:scale(1.03)}.big-book:active{transform:scale(.94)}
+.pop{position:absolute;pointer-events:none;font-weight:800;font-size:18px;color:var(--blue);animation:pop .8s ease-out forwards}
+@keyframes pop{to{transform:translateY(-55px);opacity:0}}
+.upgrade{width:100%;text-align:left;color:inherit;font:inherit;padding:11px 12px}
+.upgrade:disabled{opacity:.5;cursor:default}
+.upgrade .up-icon{font-size:22px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:#e8f2ff;flex:none}
+.upgrade h4{margin:0}.upgrade p{margin:2px 0 0}
+.memory{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:400px;margin:0 auto}
+.mcard{aspect-ratio:1;border-radius:14px;border:1px solid #dce9f7;background:linear-gradient(135deg,#e1efff,#c9e0ff);font-size:32px;display:grid;place-items:center;transition:transform .2s,background .2s}
+.mcard span{visibility:hidden}.mcard.up span,.mcard.done span{visibility:visible}
+.mcard.up{background:#fff;transform:scale(1.04)}
+.mcard.done{background:#e4f7ed;border-color:#7cc9a4}
+.game-stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.sprint-q{font-size:44px;font-weight:800;letter-spacing:-1px;text-align:center;margin:6px 0 12px;font-variant-numeric:tabular-nums}
+.sprint-input{font-size:22px;text-align:center;width:180px;max-width:100%;display:block;margin:0 auto}
+@media(max-width:700px){.clicker{grid-template-columns:1fr}.big-book{width:140px;height:140px;font-size:64px}}
+@media(prefers-reduced-motion:reduce){.pop{display:none}}
+
+/* Wordle */
+.wd-grid{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;width:min(310px,100%);margin:0 auto}
+.wd-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.wd-row.shake{animation:wdshake .35s}
+@keyframes wdshake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.wd-tile{aspect-ratio:1;display:grid;place-items:center;border:2px solid #dce9f7;border-radius:10px;background:#fff;font-size:26px;font-weight:800;text-transform:uppercase;color:var(--text-color)}
+.wd-tile.filled{border-color:#9dbfe8}
+.wd-tile.g,.wd-key.g{background:#5fb88a;border-color:#5fb88a;color:#fff}
+.wd-tile.y,.wd-key.y{background:#e8b84a;border-color:#e8b84a;color:#fff}
+.wd-tile.x,.wd-key.x{background:#a9b8cc;border-color:#a9b8cc;color:#fff}
+.wd-kb{display:grid;gap:6px;margin:16px auto 0;width:min(500px,100%)}
+.wd-kr{display:flex;gap:5px;justify-content:center}
+.wd-key{flex:1;max-width:44px;height:50px;border:0;border-radius:9px;background:#e1efff;color:#2e5a8a;font-weight:800;font-size:14px;padding:0}
+.wd-key.wide{max-width:70px;flex:1.5;font-size:12px}
+@media(max-width:430px){.wd-key{height:44px;font-size:12px}.wd-tile{font-size:22px}}
+
+/* Settings: feature switches */
+.nav[hidden],.switch-row[hidden]{display:none}
+.switch-row{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid #e8eff9;border-radius:14px;background:linear-gradient(120deg,#fff,#fbfdff)}
+.switch{position:relative;width:46px;height:26px;flex:none}
+.switch input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.switch span{position:absolute;inset:0;border-radius:999px;background:#d5e2f3;transition:background .18s;pointer-events:none}
+.switch span:after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #25466d33;transition:transform .18s}
+.switch input:checked+span{background:var(--blue)}
+.switch input:checked+span:after{transform:translateX(20px)}
+.switch input:focus-visible+span{box-shadow:0 0 0 3px #8db8f155}
+
+/* Typing Speed */
+.ty-text{font-size:19px;line-height:1.75;padding:16px 18px;border-radius:14px;background:#f6faff;border:1px solid #edf2f9;color:#9aaac0;cursor:text;overflow-wrap:anywhere}
+.ty-text .ok{color:#2f7357}
+.ty-text .bad{color:#b64d69;background:#ffe7ed;border-radius:3px}
+.ty-text .cur{box-shadow:inset 2px 0 var(--blue);color:var(--text-color)}
+.ty-input{width:100%;margin-top:12px;resize:none;font:inherit;font-size:16px;line-height:1.5}
+
+/* Due alerts, grade calculator, GPA tracker, backups */
+.due-alert{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:16px;background:#fff6e8;border:1px solid #f6dfb5;color:#7a5a24;margin-bottom:18px;font-size:13px}
+.due-alert .over{color:#b64d69}.due-ico{font-size:18px}
+.tag.due-over{background:#ffe7ed;color:#b64d69;font-weight:bold}
+.tag.due-soon{background:#fff2d9;color:#a8752f;font-weight:bold}
+.calc-result{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:linear-gradient(120deg,#eaf4ff,#f6faff);border:1px solid #e1ebfa;margin-bottom:12px}
+.calc-letter{font-size:16px;font-weight:800;padding:6px 14px}
+.calc-form{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1.2fr) minmax(0,.9fr) minmax(0,.9fr) auto;gap:8px;margin-top:4px}
+.calc-form .field,#calcClass,#gpaScale,.weights .field{font-size:13px}
+.weights{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.weights label{font-size:11px;color:#68809c;display:grid;gap:4px}
+.gpa-big{display:flex;align-items:baseline;gap:8px}
+.gpa-credit{width:70px;padding:6px 8px}
+.small.danger{color:#b64d69;border-color:#f3c9d5;background:#fff5f8;white-space:nowrap}
+@media(max-width:700px){.calc-form{grid-template-columns:1fr 1fr}.calc-form input:first-child{grid-column:1/-1}.weights{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<div class="app"><aside>
+  <div class="brand"><button class="hat" id="hat" aria-label="StudyFlow logo" title="StudyFlow"><svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M3.5 14.5 20 6l16.5 8.5L20 23 3.5 14.5Z" stroke="#2878d4" stroke-width="2.5" stroke-linejoin="round"/><path d="M10 18v8c5.8 5.1 14.2 5.1 20 0v-8M36.5 15v11" stroke="#2878d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36.5" cy="29" r="2" fill="#2878d4"/></svg></button><div><b>StudyFlow</b><small>Your school, organized</small></div></div>
+  <div><div class="label">WORKSPACE</div><nav id="nav">
+    <button class="nav active" data-page="dashboard"><span class="nav-icon">▦</span><span>Dashboard</span></button><button class="nav" data-page="classes"><span class="nav-icon">▤</span><span>My Classes</span></button><button class="nav" data-page="assignments"><span class="nav-icon">☑</span><span>Assignments</span></button><button class="nav" data-page="calendar"><span class="nav-icon">▦</span><span>Calendar</span></button><button class="nav" data-page="grades"><span class="nav-icon">↗</span><span>Grade Tracker</span></button><button class="nav" data-page="study"><span class="nav-icon">◷</span><span>Study Planner</span></button><button class="nav" data-page="flashcards"><span class="nav-icon">❐</span><span>Flashcards</span></button><button class="nav" data-page="focus"><span class="nav-icon">◔</span><span>Focus Timer</span></button><button class="nav" data-page="assistant"><span class="nav-icon">✦</span><span>AI Study Guide</span></button><button class="nav" data-page="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+  </nav></div><div class="aside-note"><b>✦ Small steps add up.</b><br>Keep your work organized and make time for what matters. <span style="display:block;margin-top:8px;opacity:.8">You’ve got this!</span></div>
+</aside><main>
+  <div class="top"><div><div class="eyebrow">STUDENT WORKSPACE</div><h1 id="pageTitle">Dashboard</h1><div class="subtitle" id="pageSubtitle">Your school week at a glance.</div></div><div class="date" id="todayLabel"></div></div>
+  <section class="page active" id="page-dashboard"><div class="hero"><div><h2>Stay organized. <span style="color:#4f8fe8">✦</span></h2><p>A little plan, a little progress. Keep classes, assignments, tests, and grades together — one step at a time.</p></div><div class="hero-mark">📘</div></div>
+    <div id="dueAlert"></div><div class="stats"><div class="stat"><small>Active classes</small><div class="num" id="statClasses">6</div></div><div class="stat"><small>To do</small><div class="num" id="statTodo">0</div></div><div class="stat"><small>Upcoming tests</small><div class="num" id="statTests">0</div></div><div class="stat"><small>Grade entries</small><div class="num" id="statGrades">0</div></div></div>
+    <div class="columns"><div class="card"><div class="card-head"><h3>Upcoming work</h3><button class="text-btn" data-goto="assignments">View all →</button></div><div class="task-list" id="dashboardTasks"></div></div><div class="card"><div class="card-head"><h3>Class overview</h3><button class="text-btn" data-goto="grades">Grades →</button></div><div class="task-list" id="dashboardClasses"></div></div></div>
+  </section>
+  <section class="page" id="page-classes"><div class="toolbar"><span class="muted">Your subjects and current averages.</span><button class="btn" id="addClass">+ Add class</button></div><div class="class-grid" id="classGrid"></div></section>
+  <section class="page" id="page-assignments"><div class="toolbar"><div class="filters"><select class="field" id="typeFilter"><option value="all">All types</option><option>Homework</option><option>Assignment</option><option>Test</option><option>Project</option></select><select class="field" id="statusFilter"><option value="all">All statuses</option><option value="todo">To do</option><option value="done">Completed</option></select><select class="field" id="priorityFilter"><option value="all">All priorities</option><option value="High">High priority</option><option value="Medium">Medium priority</option><option value="Low">Low priority</option></select></div><button class="btn" id="addTask">+ Add task</button></div><div class="list" id="assignmentList"></div></section>
+  <section class="page" id="page-calendar"><div class="card"><div class="card-head"><div><h3 id="monthLabel">Calendar</h3><span class="muted">Deadlines for your schoolwork</span></div><div><button class="btn secondary" id="prevMonth">←</button> <button class="btn secondary" id="nextMonth">→</button></div></div><div class="calendar" id="calendarGrid"></div></div></section>
+  <section class="page" id="page-grades"><div class="toolbar"><span class="muted">Record scores and keep an eye on your progress.</span><button class="btn" id="addGrade">+ Add grade</button></div><div class="card" style="margin-bottom:16px"><div class="card-head"><h3>Class averages</h3></div><div class="class-grid" id="gradeCards"></div></div><div class="columns" style="margin-bottom:16px"><div class="card"><div class="card-head"><div><h3>Grade calculator</h3><span class="muted">Add or delete scores to see your grade.</span></div><select class="field" id="calcClass" aria-label="Class" style="max-width:180px"></select></div><div id="calcBody"></div><form id="calcForm" class="calc-form"><input class="field" id="calcName" placeholder="e.g. Unit 3 test" aria-label="Assignment name" maxlength="80"><select class="field" id="calcType" aria-label="Type"><option>Homework</option><option>Assignment</option><option>Quiz</option><option>Test</option><option>Project</option></select><input class="field" id="calcScore" type="number" min="0" step="any" placeholder="Score" aria-label="Score"><input class="field" id="calcTotal" type="number" min="1" step="any" placeholder="Out of" aria-label="Points possible"><button class="btn" type="submit">+ Add</button></form></div><div class="card"><div class="card-head"><h3>GPA tracker</h3><select class="field" id="gpaScale" aria-label="Grading scale"><option value="pm">Plus/minus (A- = 3.7)</option><option value="simple">Simple (A = 4, B = 3)</option></select></div><div class="gpa-big"><span class="grade" id="gpaValue" style="font-size:44px">—</span><span class="muted">/ 4.0</span></div><div class="progress" style="margin:10px 0 16px"><span id="gpaBar" style="width:0%"></span></div><div class="table-wrap"><table><thead><tr><th>Class</th><th>Grade</th><th>Letter</th><th>Points</th><th>Credits</th></tr></thead><tbody id="gpaRows"></tbody></table></div><p class="muted" style="margin:12px 0 0;line-height:1.6">Unweighted GPA out of 4.0. Classes without grades are left out. Set a half-year class to 0.5 credits.</p></div></div><div class="card"><h3 style="margin-bottom:12px">Grade history</h3><div class="table-wrap"><table><thead><tr><th>Class</th><th>Assessment</th><th>Score</th><th>Date</th></tr></thead><tbody id="gradeRows"></tbody></table></div></div></section>
+  <section class="page" id="page-study"><div class="hero"><div><h2>Make a plan that works.</h2><p>Break studying into manageable sessions and leave room for rest.</p></div><div class="hero-mark">◷</div></div><div class="toolbar"><span class="muted">Your personal study sessions.</span><button class="btn" id="addStudy">+ Add session</button></div><div class="list" id="studyList"></div></section>
+  <section class="page" id="page-flashcards"><div class="toolbar"><span class="muted">Make a deck for each class, study card by card, or quiz yourself.</span><button class="btn" id="addDeck">+ New deck</button></div><div class="class-grid" id="deckGrid" style="margin-bottom:16px"></div><div id="deckArea"></div></section>
+  <section class="page" id="page-focus"><div class="hero"><div><h2>One thing at a time.</h2><p>Focus, then take a short break. Every fourth break is a long one.</p></div><div class="hero-mark">◔</div></div>
+    <div class="columns"><div class="card focus-card">
+      <div class="seg" role="group" aria-label="Timer mode"><button type="button" data-tmode="focus">Focus</button><button type="button" data-tmode="short">Short break</button><button type="button" data-tmode="long">Long break</button></div>
+      <div class="ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="52"/><circle class="prog" id="ringProg" cx="60" cy="60" r="52"/></svg><div class="ring-label"><b id="clock">25:00</b><span class="eyebrow" id="clockMode" style="margin:0">FOCUS</span></div></div>
+      <div class="focus-controls"><label>Focus length<select class="field" id="focusLen"><option value="15">15 minutes</option><option value="25" selected>25 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option></select></label><label>Working on<select class="field" id="focusTask"></select></label></div>
+      <div class="focus-controls"><button class="btn" id="startTimer" type="button">Start</button><button class="btn secondary" id="resetTimer" type="button">Reset</button></div>
+      <p class="muted" id="timerMsg" aria-live="polite" style="margin:0">Ready when you are.</p>
+    </div><div class="card"><div class="card-head"><h3>Focus log</h3><span class="tag" id="streakTag">0 day streak</span></div><div class="mini-stats" id="focusStats"></div><div class="bars" id="focusBars"></div><p class="muted" style="margin:12px 0 0;line-height:1.6">Minutes are saved in this browser when a focus session finishes.</p></div></div>
+  </section>
+  <section class="page" id="page-assistant">
+    <div class="hero"><div><h2>Your study sidekick ✦</h2><p>Get unstuck, break homework into steps, plan your study time, or practice for a test.</p></div><div class="hero-mark">🤖</div></div>
+    <div class="notice" style="margin-bottom:16px"><b>Study guide preview:</b> This version uses built-in guided responses in your browser, not a connected AI model. A secure AI service connection would be needed for open-ended AI answers.</div>
+    <div class="card" style="margin-bottom:16px"><h3>Try a quick guide</h3><div class="assistant-quick"><button class="btn secondary" data-prompt="Help me get started on an assignment">📝 Start an assignment</button><button class="btn secondary" data-prompt="Make me a study plan for my upcoming work">🗓️ Make a study plan</button><button class="btn secondary" data-prompt="Help me understand a topic step by step">💡 Explain a topic</button><button class="btn secondary" data-prompt="Quiz me on a topic I am studying">🎯 Practice quiz</button></div></div>
+    <div class="card"><div class="card-head"><div><h3>Ask your study guide</h3><span class="muted">Tell it what you’re working on and where you’re stuck.</span></div><span class="tag">✦ StudyFlow</span></div>
+      <div id="assistantChat" class="assistant-chat" aria-live="polite"><div class="assistant-message bot"><b>StudyFlow Guide</b><p>Hi! 🌷 What are you working on today? You can ask for a homework checklist, an essay outline, a study plan, or practice questions.</p></div></div>
+      <form id="assistantForm" class="assistant-form"><textarea id="assistantInput" class="field" rows="3" placeholder="Example: I have a biology test on cells in 3 days and don't know where to start…" required></textarea><button class="btn" type="submit">Get help ✨</button></form>
+      <p class="muted" style="margin:12px 0 0;line-height:1.6">Tip: Include the subject, assignment instructions, and due date for more useful guidance. Double-check schoolwork and use the guide to learn, not just copy.</p>
+    </div>
+  </section>
+    <section class="page" id="page-settings"><div class="card"><h3>Preferences</h3><div class="form-grid" style="margin-top:16px"><label>Display name<input class="field" id="displayName" placeholder="Your name"></label><label>School year<select class="field"><option>2026–2027</option><option>2025–2026</option><option>2027–2028</option></select></label><label class="wide">Study reminder note<input class="field" placeholder="e.g. Review notes before tests"></label></div><p style="margin-top:16px"><button class="btn" id="saveSettings">Save preferences</button></p></div><div class="card" style="margin-top:16px"><h3 id="featuresTitle">Features</h3><p class="muted" style="margin-top:8px;line-height:1.6">Choose which tools are turned on.</p><div class="switch-row" style="margin-top:14px"><div style="flex:1;min-width:0"><div class="task-title">Focus Timer</div><div class="meta">Timed focus sessions with breaks. Turning it off hides it from the sidebar and stops a running timer. Your focus log is kept.</div></div><span class="muted" id="focusToggleState">On</span><label class="switch"><input type="checkbox" id="focusToggle" aria-label="Show Focus Timer" checked><span></span></label></div><div class="switch-row" id="secretRow" hidden style="margin-top:10px"><div style="flex:1;min-width:0"><div class="task-title">Secret Room</div><div class="meta">The hidden game room behind the graduation hat. Turning it off makes the hat do nothing. Your game progress is kept.</div></div><span class="muted" id="secretToggleState">On</span><label class="switch"><input type="checkbox" id="secretToggle" aria-label="Allow the Secret Room" checked><span></span></label></div></div><div class="card" style="margin-top:16px"><h3>Customize colors</h3><p class="muted" style="margin-top:8px;line-height:1.6">Choose any color using the color picker. Changes apply to your planner and are saved on this browser.</p><div class="swatch-row" id="colorPresets" aria-label="Color presets"></div><div class="form-grid" style="margin-top:14px"><label>Accent / buttons<input class="field" id="colorAccent" type="color" value="#4f8fe8"></label><label>Page background<input class="field" id="colorBackground" type="color" value="#e8f4ff"></label><label>Second background shade<input class="field" id="colorBackground2" type="color" value="#e4efff"></label><label>Cards / panels<input class="field" id="colorCards" type="color" value="#ffffff"></label><label>Text color<input class="field" id="colorText" type="color" value="#25466d"></label></div><div class="toolbar" style="margin-top:16px;margin-bottom:0"><button class="btn secondary" id="resetColors">Reset default colors</button><span class="muted">Updates live</span></div></div><div class="card" style="margin-top:16px" id="schoolConnections"><h3>School connections</h3><p class="muted" style="line-height:1.7;margin-top:12px">Import classes, assignments, due dates, and grades when an official integration and permissions allow it.</p><div class="notice">School connections are not active in this starter template. Real integrations require official APIs, secure sign-in, and school permissions. Never enter your school password directly into an unofficial website.</div><div class="class-grid" style="margin-top:14px"><div class="class-card"><div class="class-icon">G</div><div class="class-name">Google Classroom</div><p class="muted">Official sign-in and API integration needed.</p><span class="tag">Planned</span></div><div class="class-card"><div class="class-icon">S</div><div class="class-name">Schoology</div><p class="muted">Access depends on school configuration.</p><span class="tag">Planned</span></div><div class="class-card"><div class="class-icon">＋</div><div class="class-name">Manual entry</div><p class="muted">Use the planner without linking an account.</p><button class="btn secondary" data-goto="assignments">Open assignments</button></div></div></div><div class="card" style="margin-top:16px"><h3>Backup &amp; restore</h3><p class="muted" style="margin-top:8px;line-height:1.6">Everything you add is saved in this browser: classes, assignments, grades, study sessions, flashcards, settings and game scores. Download a backup now and then so you can restore it if you clear your browser or switch computers.</p><p class="meta" id="backupInfo" style="margin:0 0 12px"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="backupDownload" type="button">Download backup</button><button class="btn secondary" id="backupCopy" type="button">Copy backup text</button><label class="btn secondary" style="cursor:pointer">Restore from file<input type="file" id="backupFile" accept=".json,application/json" hidden></label></div><details class="bulk" style="margin-top:12px"><summary>Paste backup text instead</summary><textarea class="field" id="backupText" placeholder="Paste your backup text here"></textarea><button class="btn secondary" id="backupPaste" type="button">Restore from text</button></details><div id="restoreConfirm"></div><div class="switch-row" style="margin-top:14px"><div style="flex:1;min-width:0"><div class="task-title">Delete all data</div><div class="meta">Removes everything StudyFlow saved in this browser and starts over with the example classes.</div></div><button class="small danger" id="resetAll" type="button">Delete all data</button></div></div><div class="card" style="margin-top:16px"><h3>About this template</h3><p class="muted" style="line-height:1.7;margin-bottom:0;margin-top:10px">This is a front-end demo. It does not yet have accounts, cloud storage, or real school integrations.</p></div></section>
+  <section class="page" id="page-secret"><div class="secret"><div class="eyebrow">HIDDEN PAGE</div><h2>Secret room unlocked</h2><p class="muted" style="line-height:1.7">You found the graduation-hat Easter egg. Take a short break with a game, then get back to it.</p>
+<div class="seg game-tabs" role="group" aria-label="Games"><button type="button" data-game="clicker" class="on"><span class="game-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1"/><circle cx="14.5" cy="8.5" r="1"/><circle cx="15" cy="14.5" r="1"/><circle cx="9.5" cy="15" r="1"/></svg></span>Cookie Clicker</button><button type="button" data-game="memory"><span class="game-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="11" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/></svg></span>Memory Match</button><button type="button" data-game="sprint"><span class="game-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v6M3.5 6.5h6M14.5 6.5h6M4 15l5 5M9 15l-5 5M14.5 18h6"/><circle cx="17.5" cy="15" r=".6"/><circle cx="17.5" cy="21" r=".6"/></svg></span>Math Sprint</button><button type="button" data-game="wordle"><span class="game-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>Wordle</button><button type="button" data-game="typing"><span class="game-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.5M10 10h.5M14 10h.5M18 10h.5M7.5 14h9"/></svg></span>Typing Speed</button></div>
+<div class="secret-panel" id="game-clicker"><div class="clicker"><div style="text-align:center"><div class="eyebrow">COOKIES</div><div class="grade" id="ckStars" style="font-size:38px">0</div><div class="muted" id="ckRate">0 per second · 1 per click</div><div class="book-wrap"><button type="button" class="big-book" id="ckBook" aria-label="Click the cookie to bake cookies">🍪</button></div><p class="muted" style="margin:12px 0 0">Click the cookie to bake cookies, then spend them on upgrades.</p><p style="margin:14px 0 0"><a class="btn secondary" href="https://orteil.dashnet.org/cookieclicker/" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none">Play the official Cookie Clicker ↗</a></p><p class="muted" style="margin:6px 0 0;font-size:11px">Opens in a new tab. The official site doesn't allow playing inside other websites.</p></div>
+<div><div class="card-head" style="margin-bottom:10px"><h3>Upgrades</h3><button class="text-btn" id="ckReset">Start over</button></div><div class="list" id="ckShop"></div></div></div></div>
+<div class="secret-panel" id="game-memory" hidden><div class="game-stats"><span class="tag" id="memMoves">0 moves</span><span class="tag" id="memTime">0:00</span><span class="tag" id="memBest">Best: —</span></div><div class="memory" id="memGrid"></div><p class="muted" id="memMsg" style="text-align:center;margin:14px 0 0">Find all 8 pairs in as few moves as you can.</p><p style="text-align:center;margin:12px 0 0"><button class="btn secondary" id="memNew">New game</button></p></div>
+<div class="secret-panel" id="game-sprint" hidden><div class="game-stats"><span class="tag" id="spTime">60s</span><span class="tag" id="spScore">Score: 0</span><span class="tag" id="spBest">Best: 0</span></div><div id="spStage"></div></div>
+<div class="secret-panel" id="game-wordle" hidden><div class="game-stats"><span class="tag" id="wdPlayed">Played: 0</span><span class="tag" id="wdWins">Won: 0%</span><span class="tag" id="wdStreak">Streak: 0</span></div><div class="wd-grid" id="wdGrid"></div><p class="muted" id="wdMsg" aria-live="polite" style="text-align:center;min-height:20px;margin:12px 0 0">Guess the 5-letter word in 6 tries.</p><div class="wd-kb" id="wdKb"></div><p style="text-align:center;margin:14px 0 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn" id="wdNew" type="button">New word</button><a class="btn secondary" href="https://www.nytimes.com/games/wordle/index.html" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none">Play the official Wordle ↗</a></p><p class="muted" style="text-align:center;margin:8px 0 0;font-size:11px">🟩 right spot · 🟨 in the word, wrong spot · ⬜ not in the word. The official Wordle opens in a new tab.</p></div>
+<div class="secret-panel" id="game-typing" hidden><div class="game-stats"><span class="tag" id="tyTime">60s</span><span class="tag" id="tyWpm">WPM: 0</span><span class="tag" id="tyAcc">Accuracy: 100%</span><span class="tag" id="tyBest">Best: 0 WPM</span></div><div class="ty-text" id="tyText" aria-hidden="true"></div><textarea class="field ty-input" id="tyInput" rows="3" placeholder="Type the passage here…" aria-label="Type the passage" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea><p class="muted" id="tyMsg" aria-live="polite" style="text-align:center;margin:12px 0 0">Start typing to begin the 60-second clock.</p><p style="text-align:center;margin:12px 0 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn secondary" id="tyAgain" type="button">Try again</button><button class="btn" id="tyNew" type="button">New passage</button></p></div>
+<p style="margin:16px 0 0"><button class="btn secondary" id="backSecret">← Back to StudyFlow</button></p></div></section>
+</main></div>
+<div class="modal-bg" id="modalBg"><div class="modal"><h2 id="modalTitle">Add item</h2><form id="modalForm"><div class="form-grid" id="modalFields"></div><div class="modal-actions"><button type="button" class="btn secondary" id="cancel">Cancel</button><button class="btn" type="submit">Save</button></div></form></div></div><div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];const today=new Date();today.setHours(0,0,0,0);const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;const plus=n=>{let d=new Date(today);d.setDate(d.getDate()+n);return iso(d)};let classes=[{id:1,name:'Mathematics',teacher:'Period 1',icon:'∑',grades:[{title:'Chapter quiz',score:88,total:100,date:plus(-5)}]},{id:2,name:'English',teacher:'Period 2',icon:'A',grades:[{title:'Essay',score:92,total:100,date:plus(-3)}]},{id:3,name:'Biology',teacher:'Period 3',icon:'⌘',grades:[{title:'Lab report',score:85,total:100,date:plus(-8)}]},{id:4,name:'History',teacher:'Period 4',icon:'▤',grades:[]},{id:5,name:'Chemistry',teacher:'Period 5',icon:'⚗',grades:[]},{id:6,name:'Spanish',teacher:'Period 6',icon:'文',grades:[]}];let tasks=[{id:1,title:'Algebra practice',classId:1,type:'Homework',due:plus(1),points:20,priority:'Medium',done:false},{id:2,title:'English reading response',classId:2,type:'Assignment',due:plus(2),points:30,priority:'High',done:false},{id:3,title:'Biology chapter test',classId:3,type:'Test',due:plus(3),points:100,priority:'High',done:false},{id:4,title:'History project outline',classId:4,type:'Project',due:plus(4),points:50,priority:'Medium',done:false},{id:5,title:'Spanish vocabulary review',classId:6,type:'Homework',due:plus(-1),points:10,priority:'Low',done:true}];let sessions=[{id:1,title:'Review algebra notes',subject:'Mathematics',date:plus(1),time:'16:00',duration:'30 minutes'},{id:2,title:'Prepare biology flashcards',subject:'Biology',date:plus(2),time:'17:00',duration:'25 minutes'}];let month=new Date(today.getFullYear(),today.getMonth(),1),hatClicks=0,hatTimer,mode='';const info={dashboard:['Dashboard','Your school week at a glance.'],classes:['My Classes','Your subjects and current averages.'],assignments:['Assignments','Manage homework, projects, and tests.'],calendar:['Calendar','See your deadlines by date.'],grades:['Grade Tracker','Track scores and understand your progress.'],study:['Study Planner','Plan focused study sessions.'],assistant:['AI Study Guide','Get step-by-step support with homework and studying.'],connections:['School Connections','Connect supported school platforms.'],settings:['Settings','Customize your workspace.'],secret:['Secret Room','A hidden page you discovered.']};function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function cname(id){return classes.find(c=>c.id===+id)?.name||'General'}function avg(c){return c.grades.length?Math.round(c.grades.reduce((n,g)=>n+g.score/g.total*100,0)/c.grades.length):null}function date(s){return s?new Date(s+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}):'No date'}function toast(s){let t=$('#toast');t.textContent=s;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2400)}function go(p){$$('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+p));$$('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===p));$('#pageTitle').textContent=info[p][0];$('#pageSubtitle').textContent=info[p][1];render();window.scrollTo({top:0,behavior:'smooth'})}$('#nav').addEventListener('click',e=>{let b=e.target.closest('[data-page]');if(b)go(b.dataset.page)});document.addEventListener('click',e=>{let b=e.target.closest('[data-goto]');if(b)go(b.dataset.goto)});$('#hat').addEventListener('click',()=>{hatClicks++;clearTimeout(hatTimer);hatTimer=setTimeout(()=>hatClicks=0,1800);if(hatClicks>=5){hatClicks=0;go('secret');toast('Secret room unlocked!')}});$('#backSecret').onclick=()=>go('dashboard');$('#todayLabel').textContent=today.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+function render(){renderStats();renderDash();renderClasses();renderTasks();renderCalendar();renderGrades();renderSessions()}function renderStats(){$('#statClasses').textContent=classes.length;$('#statTodo').textContent=tasks.filter(t=>!t.done).length;$('#statTests').textContent=tasks.filter(t=>t.type==='Test'&&!t.done&&t.due>=iso(today)).length;$('#statGrades').textContent=classes.reduce((n,c)=>n+c.grades.length,0)}function renderDash(){let up=tasks.filter(t=>!t.done).sort((a,b)=>a.due.localeCompare(b.due));$('#dashboardTasks').innerHTML=up.length?up.slice(0,6).map(t=>`<div class="task"><input type="checkbox" data-complete="${t.id}"><div class="task-info"><div class="task-title">${safe(t.title)}</div><div class="meta">${safe(cname(t.classId))} · ${safe(dueLabel(t))}${t.points!==''&&t.points!=null?' · '+safe(t.points)+' pts':''}</div></div>${dueTag(t)}<span class="tag priority-${safe((t.priority||'Medium').toLowerCase())}">${safe(t.priority||'Medium')}</span></div>`).join(''):'<div class="empty">You are all caught up.</div>';$('#dashboardClasses').innerHTML=classes.slice(0,4).map(c=>`<div class="task"><div class="class-icon">${safe(c.icon)}</div><div class="task-info"><div class="task-title">${safe(c.name)}</div><div class="meta">${c.grades.length} grade entr${c.grades.length===1?'y':'ies'}</div></div><b>${avg(c)===null?'—':avg(c)+'%'}</b></div>`).join('')}function renderClasses(){$('#classGrid').innerHTML=classes.map(c=>`<div class="class-card"><div class="class-top"><div class="class-icon">${safe(c.icon)}</div><span class="grade">${avg(c)===null?'—':avg(c)+'%'}</span></div><div class="class-name">${safe(c.name)}</div><div class="muted">${safe(c.teacher)}</div><div class="progress"><span style="width:${avg(c)??0}%"></span></div><div class="meta">${c.grades.length?c.grades.length+' recorded score(s)':'No grades entered yet'}</div></div>`).join('')||'<div class="empty">Add your first class.</div>'}function dueLabel(t){if(t.done)return 'Completed';if(t.due<iso(today))return 'Overdue';if(t.due===iso(today))return 'Due today';return 'Due '+date(t.due)}function dueTag(t){if(t.done||!t.due)return '';const n=Math.round((new Date(t.due+'T12:00:00')-new Date(iso(today)+'T12:00:00'))/864e5);return n<0?'<span class="tag due-over">Overdue</span>':n===0?'<span class="tag due-soon">Due today</span>':n===1?'<span class="tag due-soon">Tomorrow</span>':''}function priorityRank(p){return ({High:0,Medium:1,Low:2})[p||'Medium']??1}function renderTasks(){let type=$('#typeFilter').value,status=$('#statusFilter').value,priority=$('#priorityFilter')?.value||'all',list=tasks.filter(t=>(type==='all'||t.type===type)&&(status==='all'||(status==='done'?t.done:!t.done))&&(priority==='all'||(t.priority||'Medium')===priority)).sort((a,b)=>priorityRank(a.priority)-priorityRank(b.priority)||a.due.localeCompare(b.due));$('#assignmentList').innerHTML=list.length?list.map(t=>`<div class="item"><div style="flex:1;min-width:0"><h4>${t.done?'✓ ':''}${safe(t.title)}</h4><p>${safe(cname(t.classId))} · ${safe(t.type)} · ${safe(dueLabel(t))}${t.points!==''&&t.points!=null?' · '+safe(t.points)+' points possible':''}</p><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${dueTag(t)}<span class="tag priority-${safe(t.priority||'Medium').toLowerCase()}">${safe(t.priority||'Medium')} priority</span><span class="tag ${t.type==='Test'?'test':''}">${safe(t.type)}</span></div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="small" data-toggle="${t.id}">${t.done?'Reopen':'Complete'}</button><button class="small" data-delete="${t.id}">Delete</button></div></div>`).join(''):'<div class="card empty">No tasks match these filters.</div>'}function renderCalendar(){let y=month.getFullYear(),m=month.getMonth();$('#monthLabel').textContent=month.toLocaleDateString(undefined,{month:'long',year:'numeric'});let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),h=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<div class="weekday">${x}</div>`).join('');for(let i=0;i<first;i++)h+='<div></div>';for(let n=1;n<=days;n++){let key=iso(new Date(y,m,n)),items=tasks.filter(t=>t.due===key&&!t.done);h+=`<div class="day ${key===iso(today)?'today':''}"><b>${n}</b>${items.slice(0,2).map(t=>`<span class="dot" title="${safe(t.title)}"></span>`).join('')}${items.length>2?`<small> +${items.length-2}</small>`:''}</div>`}$('#calendarGrid').innerHTML=h}function renderGrades(){$('#gradeCards').innerHTML=classes.map(c=>`<div class="class-card"><div class="class-name">${safe(c.name)}</div><div class="grade" style="margin-top:8px">${avg(c)===null?'—':avg(c)+'%'}</div><div class="meta">${c.grades.length?'Average of '+c.grades.length+' score(s)':'Add a grade to calculate'}</div></div>`).join('');let rows=classes.flatMap(c=>c.grades.map(g=>({c,g}))).sort((a,b)=>b.g.date.localeCompare(a.g.date));$('#gradeRows').innerHTML=rows.length?rows.map(({c,g})=>`<tr><td><b>${safe(c.name)}</b></td><td>${safe(g.title)}</td><td>${g.score}/${g.total} (${Math.round(g.score/g.total*100)}%)</td><td>${date(g.date)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty">No grades yet. Add a grade to begin tracking.</td></tr>'}function renderSessions(){$('#studyList').innerHTML=sessions.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).map(s=>`<div class="item"><div><h4>${safe(s.title)}</h4><p>${safe(s.subject)} · ${date(s.date)} at ${safe(s.time)} · ${safe(s.duration)}</p></div><button class="small" data-session-delete="${s.id}">Delete</button></div>`).join('')||'<div class="card empty">No study sessions yet.</div>'}
+document.addEventListener('change',e=>{if(e.target.matches('[data-complete]')){let t=tasks.find(t=>t.id===+e.target.dataset.complete);if(t)t.done=e.target.checked;render()}});document.addEventListener('click',e=>{let t=e.target.closest('[data-toggle]');if(t){let x=tasks.find(x=>x.id===+t.dataset.toggle);if(x)x.done=!x.done;render()}let d=e.target.closest('[data-delete]');if(d){tasks=tasks.filter(x=>x.id!==+d.dataset.delete);render();toast('Task deleted.')}let sd=e.target.closest('[data-session-delete]');if(sd){sessions=sessions.filter(x=>x.id!==+sd.dataset.sessionDelete);renderSessions();toast('Session deleted.')}});$('#typeFilter').onchange=renderTasks;$('#statusFilter').onchange=renderTasks;$('#priorityFilter').onchange=renderTasks;$('#prevMonth').onclick=()=>{month.setMonth(month.getMonth()-1);renderCalendar()};$('#nextMonth').onclick=()=>{month.setMonth(month.getMonth()+1);renderCalendar()};
+function f(label,name,type='text',extra=''){return `<label>${label}<input class="field" name="${name}" type="${type}" required ${extra}></label>`}function sel(label,name,opts){return `<label>${label}<select class="field" name="${name}" required>${opts.map(o=>`<option value="${safe(o.value)}">${safe(o.label)}</option>`).join('')}</select></label>`}function openModal(m){mode=m;let h='';if(m==='task'){ $('#modalTitle').textContent='Add assignment or task';h=f('Title','title')+sel('Class','classId',classes.map(c=>({value:c.id,label:c.name})))+sel('Type','type',['Homework','Assignment','Test','Project'].map(x=>({value:x,label:x})))+sel('Priority level','priority',['High','Medium','Low'].map(x=>({value:x,label:x+' priority'})))+`<label>Points possible (optional)<input class="field" name="points" type="number" min="0" step="any"></label>`+f('Due date','due','date')}if(m==='class'){ $('#modalTitle').textContent='Add class';h=f('Class name','name')+f('Teacher / period','teacher')+f('Icon (one character)','icon')}if(m==='grade'){ $('#modalTitle').textContent='Add grade';h=sel('Class','classId',classes.map(c=>({value:c.id,label:c.name})))+f('Assessment name','title')+f('Score earned','score','number','min="0" step="any"')+f('Points possible','total','number','min="1" step="any"')+f('Date','date','date')}if(m==='study'){ $('#modalTitle').textContent='Add study session';h=f('Session title','title')+f('Subject','subject')+f('Date','date','date')+f('Time','time','time')+sel('Duration','duration',['25 minutes','30 minutes','45 minutes','60 minutes','90 minutes'].map(x=>({value:x,label:x})))}$('#modalFields').innerHTML=h;$('#modalBg').classList.add('show')}function closeModal(){$('#modalBg').classList.remove('show')}$('#addTask').onclick=()=>openModal('task');$('#addClass').onclick=()=>openModal('class');$('#addGrade').onclick=()=>openModal('grade');$('#addStudy').onclick=()=>openModal('study');$('#cancel').onclick=closeModal;$('#modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal()});$('#modalForm').addEventListener('submit',e=>{e.preventDefault();let d=Object.fromEntries(new FormData(e.target).entries());if(mode==='task'){tasks.push({id:Date.now(),title:d.title,classId:+d.classId,type:d.type,due:d.due,points:d.points===''?'':Number(d.points),priority:d.priority||'Medium',done:false});toast('Task added.')}if(mode==='class'){classes.push({id:Date.now(),name:d.name,teacher:d.teacher||'Class',icon:d.icon||'▤',grades:[]});toast('Class added.')}if(mode==='grade'){let c=classes.find(c=>c.id===+d.classId),score=+d.score,total=+d.total;if(total<=0||score<0||score>total){toast('Check the score and points possible.');return}c.grades.push({title:d.title,score,total,date:d.date});toast('Grade recorded.')}if(mode==='study'){sessions.push({id:Date.now(),title:d.title,subject:d.subject,date:d.date,time:d.time,duration:d.duration});toast('Study session added.')}closeModal();render()});const defaultColors={accent:'#4f8fe8',background:'#e8f4ff',background2:'#e4efff',cards:'#ffffff',text:'#25466d'};function applyColors(c){document.documentElement.style.setProperty('--blue',c.accent);document.documentElement.style.setProperty('--page-bg',c.background);document.documentElement.style.setProperty('--page-bg-2',c.background2);document.documentElement.style.setProperty('--card-bg',c.cards+'ed');document.documentElement.style.setProperty('--text-color',c.text);document.documentElement.style.setProperty('--ink',c.text);let b=$('#colorAccent');if(b){b.value=c.accent;$('#colorBackground').value=c.background;$('#colorBackground2').value=c.background2;$('#colorCards').value=c.cards;$('#colorText').value=c.text}}function readColors(){return {accent:$('#colorAccent').value,background:$('#colorBackground').value,background2:$('#colorBackground2').value,cards:$('#colorCards').value,text:$('#colorText').value}}function saveColors(){const c=readColors();applyColors(c);try{localStorage.setItem('studyflowColors',JSON.stringify(c))}catch(e){} }try{const saved=localStorage.getItem('studyflowColors');if(saved)applyColors({...defaultColors,...JSON.parse(saved)})}catch(e){}['colorAccent','colorBackground','colorBackground2','colorCards','colorText'].forEach(id=>$('#'+id).addEventListener('input',saveColors));$('#resetColors').onclick=()=>{applyColors(defaultColors);try{localStorage.removeItem('studyflowColors')}catch(e){}toast('Default colors restored.')};$('#saveSettings').onclick=()=>toast($('#displayName').value.trim()?`Preferences saved for ${$('#displayName').value.trim()}.`:'Preferences saved.');
+// Study guide preview: local guided templates, no external AI service is called.
+function addGuideMessage(text,who){const box=document.createElement('div');box.className='assistant-message '+who;const content=document.createElement('div');content.innerHTML=text;box.appendChild(content);$('#assistantChat').appendChild(box);$('#assistantChat').scrollTop=$('#assistantChat').scrollHeight}
+function guideSafe(s){return safe(s).replace(/\n/g,'<br>')}
+function guideReply(raw){const q=raw.toLowerCase();const openTasks=tasks.filter(t=>!t.done).sort((a,b)=>priorityRank(a.priority)-priorityRank(b.priority)||a.due.localeCompare(b.due));const next=openTasks.slice(0,4).map(t=>`<li><b>${safe(t.title)}</b> — ${safe(cname(t.classId))}, ${safe(dueLabel(t))}, ${safe(t.priority||'Medium')} priority${t.points!==''&&t.points!=null?`, ${safe(t.points)} points`:''}</li>`).join('');
+if(/study plan|plan my|schedule|upcoming work|what should i do|where to start/.test(q)){return `<div class="guide-title">🌷 A simple study plan</div><ol><li><b>Choose one priority.</b> Start with a high-priority task or the closest due date.</li><li><b>Work for 20–25 minutes.</b> Put away distractions and focus on one small part.</li><li><b>Take a 5-minute break.</b> Stretch, drink water, and reset.</li><li><b>Check your progress.</b> Write down what is finished and the next tiny step.</li></ol><div class="guide-title">Your planner tasks</div>${next?`<ul>${next}</ul>`:'You have no unfinished tasks in the planner yet. Add your assignments so the guide can help you organize them.'}<p>Tell me your subject and how much time you have, and you can make this plan more specific.</p>`}
+if(/quiz|practice questions|test me|flashcard/.test(q)){return `<div class="guide-title">🎯 Quick practice method</div><p>Try answering these without looking at your notes:</p><ol><li>What are the 3 most important ideas in <b>${guideSafe(raw.replace(/quiz me on|quiz me|practice quiz|make me|please/ig,'').trim()||'your topic')}</b>?</li><li>Can you explain one idea in your own words, as if teaching a friend?</li><li>What is one example, and why does it fit?</li><li>What part is still confusing?</li></ol><p>Reply with your subject or a list of vocabulary words, and use them to make a more focused practice set. This preview doesn't generate a custom answer key.</p>`}
+if(/essay|paragraph|writing|thesis|outline|report/.test(q)){return `<div class="guide-title">📝 Let's build your writing assignment</div><ol><li><b>Decode the prompt:</b> underline the action word (explain, compare, argue, describe).</li><li><b>Make a main point:</b> answer the prompt in one clear sentence.</li><li><b>Gather evidence:</b> choose 2–3 examples, facts, or details from your class materials.</li><li><b>Explain each example:</b> connect it back to your main point.</li><li><b>Revise:</b> check that every paragraph has one job and that the conclusion wraps up your idea.</li></ol><p><b>Try this:</b> Paste the assignment prompt and I can help you turn it into a checklist or outline. Make sure the final work reflects your own thinking.</p>`}
+if(/math|equation|algebra|fraction|solve|calculate/.test(q)){return `<div class="guide-title">➗ A step-by-step way to get unstuck</div><ol><li>Write down exactly what the question asks you to find.</li><li>List the information you already know.</li><li>Choose the rule or operation that connects the known information to the answer.</li><li>Solve one step at a time, showing your work.</li><li>Check by substituting your answer back into the original question.</li></ol><p>Send one specific problem (and what you tried so far), and use the steps to work through it. This preview gives general guidance rather than calculating every custom problem.</p>`}
+if(/explain|understand|confus|don't get|dont get|teach me|topic/.test(q)){return `<div class="guide-title">💡 Make a confusing topic easier</div><ol><li><b>Plain-language version:</b> write what you think the idea means in one sentence.</li><li><b>Key words:</b> list the terms you need to know and define each simply.</li><li><b>Example:</b> find one example from notes or a textbook.</li><li><b>Teach-back:</b> explain it out loud without looking, then check what you missed.</li></ol><p>For more tailored help, tell me the exact topic and class, or paste a short section of your notes or instructions.</p>`}
+if(/homework|assignment|help me|stuck|start/.test(q)){return `<div class="guide-title">✨ Let's break the homework down</div><ol><li><b>Understand the task:</b> what do the instructions ask you to hand in?</li><li><b>Split it up:</b> turn the instructions into 3–5 small actions.</li><li><b>Start with 10 minutes:</b> complete the easiest first step to build momentum.</li><li><b>Review the rubric:</b> check each requirement before submitting.</li></ol><p><b>Next step:</b> Paste the exact instructions (leave out private information), and I can help organize them into a checklist.</p>`}
+return `<div class="guide-title">🌟 Let's figure it out together</div><p>I can help you organize homework, plan study time, outline an essay, review a topic, or prepare for a test.</p><p><b>Try this:</b> tell me the subject, what the assignment asks you to do, when it is due, and the part that feels hardest. You can also choose one of the quick-guide buttons above.</p><div class="guide-title">A few unfinished tasks from your planner</div>${next?`<ul>${next}</ul>`:'No unfinished tasks are listed right now.'}`}
+function sendGuide(text){const q=text.trim();if(!q)return;addGuideMessage(`<b>You</b><p>${guideSafe(q)}</p>`,'user');addGuideMessage(`<b>StudyFlow Guide</b><div style="margin-top:6px">${guideReply(q)}</div>`,'bot');$('#assistantInput').value=''}
+$('#assistantForm').addEventListener('submit',e=>{e.preventDefault();sendGuide($('#assistantInput').value)});document.addEventListener('click',e=>{const b=e.target.closest('[data-prompt]');if(b){go('assistant');sendGuide(b.dataset.prompt)}});
+render();
+</script>
+<script>
+// Saving, backups, due-soon alerts, grade calculator and GPA tracker.
+(function(){
+const DKEY='studyflowData',SCALE_KEY='studyflowGpaScale',BACKUP_KEY='studyflowLastBackup';
+const TYPES=['Homework','Assignment','Quiz','Test','Project'];
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- 1. Save everything ---------- */
+// Classes, assignments, grades and study sessions are saved after every change and loaded on the next visit.
+try{const d=JSON.parse(store.get(DKEY));
+  if(d&&Array.isArray(d.classes)){classes=d.classes;tasks=Array.isArray(d.tasks)?d.tasks:[];sessions=Array.isArray(d.sessions)?d.sessions:[];if(d.displayName)$('#displayName').value=d.displayName}}catch(e){}
+let gid=Date.now();
+const guessType=t=>/quiz/i.test(t)?'Quiz':/test|exam/i.test(t)?'Test':/project/i.test(t)?'Project':/homework|\bhw\b/i.test(t)?'Homework':'Assignment';
+function normalize(){classes.forEach(c=>{c.grades=Array.isArray(c.grades)?c.grades:[];c.weights=c.weights||{};if(c.credits==null)c.credits=1;
+  c.grades.forEach(g=>{if(!g.id)g.id=++gid;if(!g.type)g.type=guessType(g.title||'')})})}
+function saveData(){store.set(DKEY,JSON.stringify({v:1,classes,tasks,sessions,displayName:$('#displayName').value.trim()}))}
+const baseRender=render;
+render=function(){normalize();baseRender();renderDueAlert();renderCalc();renderGpa();saveData()};
+const baseSessions=renderSessions;
+renderSessions=function(){baseSessions();saveData()};
+$('#saveSettings').addEventListener('click',saveData);
+
+/* ---------- Grade math (shared by every page) ---------- */
+const SCALES={
+  pm:[[93,'A',4],[90,'A-',3.7],[87,'B+',3.3],[83,'B',3],[80,'B-',2.7],[77,'C+',2.3],[73,'C',2],[70,'C-',1.7],[67,'D+',1.3],[63,'D',1],[60,'D-',0.7],[0,'F',0]],
+  simple:[[90,'A',4],[80,'B',3],[70,'C',2],[60,'D',1],[0,'F',0]]};
+let scale=store.get(SCALE_KEY)==='simple'?'simple':'pm';
+const letterOf=p=>SCALES[scale].find(([min])=>p>=min);
+// With category weights set, each category's average counts by its weight. Without weights, every score counts equally.
+function percent(c,list){
+  const g=list||c.grades;if(!g.length)return null;
+  const w=c.weights||{};let tw=0,acc=0;
+  TYPES.forEach(t=>{const wt=+w[t]||0,gs=g.filter(x=>x.type===t);if(!wt||!gs.length)return;acc+=gs.reduce((s,x)=>s+x.score/x.total,0)/gs.length*100*wt;tw+=wt});
+  return tw?acc/tw:g.reduce((s,x)=>s+x.score/x.total*100,0)/g.length;
+}
+avg=function(c){const p=percent(c);return p==null?null:Math.round(p)};
+
+/* ---------- 3. Due-soon alerts ---------- */
+function renderDueAlert(){
+  const t0=iso(today),t1=plus(1),open=tasks.filter(t=>!t.done&&t.due);
+  const over=open.filter(t=>t.due<t0).length,tod=open.filter(t=>t.due===t0).length,tom=open.filter(t=>t.due===t1).length;
+  const parts=[over&&`<b class="over">${over} overdue</b>`,tod&&`<b>${tod} due today</b>`,tom&&`${tom} due tomorrow`].filter(Boolean);
+  $('#dueAlert').innerHTML=parts.length?`<div class="due-alert"><span class="due-ico" aria-hidden="true">⏰</span><div style="flex:1;min-width:0"><b>Heads up!</b> ${parts.join(' · ')}</div><button class="text-btn" data-goto="assignments">View →</button></div>`:'';
+}
+
+/* ---------- 4. Grade calculator ---------- */
+let calcSel=null;
+function renderCalc(){
+  if(!classes.find(c=>c.id===calcSel))calcSel=classes[0]?.id??null;
+  $('#calcClass').innerHTML=classes.map(c=>`<option value="${c.id}"${c.id===calcSel?' selected':''}>${safe(c.name)}</option>`).join('')||'<option>No classes yet</option>';
+  const c=classes.find(x=>x.id===calcSel),body=$('#calcBody');
+  $('#calcForm').hidden=!c;
+  if(!c){body.innerHTML='<div class="empty">Add a class on My Classes to use the calculator.</div>';return}
+  const p=percent(c),L=p==null?null:letterOf(p),w=c.weights,wsum=TYPES.reduce((s,t)=>s+(+w[t]||0),0);
+  body.innerHTML=`<div class="calc-result"><div><div class="eyebrow" style="margin:0">CURRENT GRADE</div><div class="grade" style="font-size:34px">${p==null?'—':p.toFixed(1)+'%'}</div></div>
+    ${L?`<div style="text-align:right"><span class="tag calc-letter">${L[1]}</span><div class="meta">${L[2].toFixed(1)} GPA points</div></div>`:'<div class="meta">Add a score below to see the grade.</div>'}</div>
+    <div class="list" style="margin-bottom:12px">${c.grades.length?c.grades.map(g=>`<div class="item"><div style="flex:1;min-width:0"><h4>${safe(g.title)}</h4><p>${safe(g.type)}${g.date?' · '+date(g.date):''}</p></div><b style="white-space:nowrap">${g.score} / ${g.total}</b><span class="tag">${Math.round(g.score/g.total*100)}%</span><button class="small" data-gdel="${g.id}" aria-label="Delete ${safe(g.title)}">Delete</button></div>`).join(''):'<div class="empty">No scores yet for this class.</div>'}</div>
+    <details class="bulk"${wsum?' open':''}><summary>Category weights (optional)</summary><p class="muted" style="margin:8px 0">If your teacher weights categories, like Tests 50%, enter them here. Leave all at 0 to count every score equally.</p>
+    <div class="weights">${TYPES.map(t=>`<label>${t} %<input class="field" type="number" min="0" max="100" step="5" data-weight="${t}" value="${+w[t]||0}"></label>`).join('')}</div>
+    <p class="meta" style="margin-top:8px">${wsum===0?'Every score counts equally.':wsum===100?'Weights add up to 100%.':`Weights add up to ${wsum}%. They're scaled to 100% when calculating.`}</p></details>`;
+}
+$('#calcClass').onchange=()=>{calcSel=+$('#calcClass').value;renderCalc()};
+$('#calcForm').addEventListener('submit',e=>{
+  e.preventDefault();const c=classes.find(x=>x.id===calcSel);if(!c)return;
+  const title=$('#calcName').value.trim(),score=parseFloat($('#calcScore').value),total=parseFloat($('#calcTotal').value);
+  if(!title){toast('Name the assignment first.');$('#calcName').focus();return}
+  if(isNaN(score)||score<0){toast('Enter the score you got.');$('#calcScore').focus();return}
+  if(isNaN(total)||total<=0){toast('Enter the points possible.');$('#calcTotal').focus();return}
+  c.grades.push({id:++gid,title,type:$('#calcType').value,score,total,date:iso(today)});
+  $('#calcName').value='';$('#calcScore').value='';render();toast('Score added.');$('#calcName').focus();
+});
+$('#calcBody').addEventListener('click',e=>{const b=e.target.closest('[data-gdel]');if(!b)return;const c=classes.find(x=>x.id===calcSel);
+  const g=c.grades.find(x=>x.id===+b.dataset.gdel);c.grades=c.grades.filter(x=>x!==g);render();toast(`Deleted "${g.title}".`)});
+$('#calcBody').addEventListener('change',e=>{const i=e.target.closest('[data-weight]');if(!i)return;const c=classes.find(x=>x.id===calcSel);
+  c.weights[i.dataset.weight]=Math.max(0,+i.value||0);render()});
+
+/* ---------- 5. GPA tracker ---------- */
+function renderGpa(){
+  $('#gpaScale').value=scale;
+  const rows=classes.map(c=>{const p=percent(c);return {c,p,L:p==null?null:letterOf(p)}});
+  const counted=rows.filter(r=>r.L&&+r.c.credits>0),cr=counted.reduce((s,r)=>s+ +r.c.credits,0);
+  const gpa=cr?counted.reduce((s,r)=>s+r.L[2]*r.c.credits,0)/cr:null;
+  $('#gpaValue').textContent=gpa==null?'—':gpa.toFixed(2);
+  $('#gpaBar').style.width=(gpa==null?0:gpa/4*100)+'%';
+  $('#gpaRows').innerHTML=rows.length?rows.map(({c,p,L})=>`<tr><td><b>${safe(c.name)}</b></td><td>${p==null?'—':p.toFixed(1)+'%'}</td><td>${L?`<span class="tag">${L[1]}</span>`:'<span class="meta">—</span>'}</td><td>${L?L[2].toFixed(1):'—'}</td>
+    <td><input class="field gpa-credit" type="number" min="0" step="0.5" value="${c.credits}" data-credit="${c.id}" aria-label="Credits for ${safe(c.name)}"></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Add a class to start tracking your GPA.</td></tr>';
+}
+$('#gpaScale').onchange=()=>{scale=$('#gpaScale').value;store.set(SCALE_KEY,scale);render()};
+$('#gpaRows').addEventListener('change',e=>{const i=e.target.closest('[data-credit]');if(!i)return;const c=classes.find(x=>x.id===+i.dataset.credit);
+  c.credits=Math.max(0,+i.value||0);render()});
+
+/* ---------- 2. Backup and restore ---------- */
+// A backup holds every StudyFlow item saved in this browser: data, flashcards, focus log, colors, settings and game scores.
+function collect(){const data={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('studyflow')&&k!==BACKUP_KEY)data[k]=localStorage.getItem(k)}}catch(e){}
+  return JSON.stringify({app:'StudyFlow',version:1,saved:new Date().toISOString(),data},null,2)}
+function markBackup(){store.set(BACKUP_KEY,iso(new Date()));showBackupInfo()}
+function showBackupInfo(){const b=store.get(BACKUP_KEY);$('#backupInfo').textContent=b?'Last backup: '+new Date(b+'T12:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})+'.':'No backup yet.'}
+$('#backupDownload').onclick=()=>{saveData();const blob=new Blob([collect()],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download=`studyflow-backup-${iso(new Date())}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);markBackup();toast('Backup downloaded.')};
+$('#backupCopy').onclick=()=>{saveData();const t=collect();
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{markBackup();toast('Backup copied. Paste it into a note or email to yourself.')},
+  ()=>{const ta=$('#backupText');ta.closest('details').open=true;ta.value=t;ta.select();toast('Copy it by hand: the backup text is selected below.')})};
+let pending=null;
+function readBackup(text){
+  let b;try{b=JSON.parse(text)}catch(e){}
+  if(!b||b.app!=='StudyFlow'||!b.data||typeof b.data!=='object'){toast("That isn't a StudyFlow backup.");return}
+  pending=b;const when=b.saved?new Date(b.saved).toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}):'an unknown date';
+  $('#restoreConfirm').innerHTML=`<div class="notice" style="margin-top:12px"><b>Replace everything with the backup from ${safe(when)}?</b> Your current StudyFlow data in this browser will be overwritten.<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn" data-restore="yes">Replace my data</button><button class="btn secondary" data-restore="no">Cancel</button></div></div>`;
+}
+function wipe(){try{Object.keys(localStorage).filter(k=>k.startsWith('studyflow')).forEach(k=>localStorage.removeItem(k))}catch(e){}}
+$('#backupFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>readBackup(String(r.result));r.readAsText(f);e.target.value=''};
+$('#backupPaste').onclick=()=>readBackup($('#backupText').value);
+$('#restoreConfirm').addEventListener('click',e=>{const b=e.target.closest('[data-restore]');if(!b)return;
+  if(b.dataset.restore==='no'){pending=null;$('#restoreConfirm').innerHTML='';return}
+  wipe();Object.entries(pending.data).forEach(([k,v])=>{if(k.startsWith('studyflow'))store.set(k,String(v))});location.reload()});
+$('#resetAll').onclick=function(){
+  if(!this.dataset.armed){this.dataset.armed='1';this.textContent='Tap again to delete everything';setTimeout(()=>{delete this.dataset.armed;this.textContent='Delete all data'},4000);return}
+  wipe();location.reload();
+};
+showBackupInfo();
+
+render();
+})();
+</script><script>
+// Flashcards, Focus Timer and color presets. Flashcards and focus minutes are saved in this browser.
+(function(){
+const FKEY='studyflowFlashcards',LKEY='studyflowFocus';
+function load(k,fb){try{const v=JSON.parse(localStorage.getItem(k));return v??fb}catch(e){return fb}}
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+const newId=()=>Date.now()+Math.floor(Math.random()*1e6);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+info.flashcards=['Flashcards','Study a deck card by card, or take a quick quiz.'];
+info.focus=['Focus Timer','Focus in short sessions with breaks in between.'];
+
+/* ---------- Flashcards ---------- */
+let fc=load(FKEY,null);
+if(!fc||!Array.isArray(fc.decks)||!Array.isArray(fc.cards)){
+  fc={decks:[{id:1,name:'Cell parts',classId:3},{id:2,name:'Spanish vocabulary',classId:6}],cards:[
+    [1,'Mitochondria','Makes energy (ATP) for the cell'],[1,'Ribosome','Builds proteins'],[1,'Nucleus','Holds the cell\'s DNA'],
+    [1,'Cell membrane','Controls what enters and leaves the cell'],[1,'Chloroplast','Carries out photosynthesis in plant cells'],
+    [2,'la biblioteca','the library'],[2,'el cuaderno','the notebook'],[2,'la tarea','the homework'],[2,'el lápiz','the pencil'],[2,'aprender','to learn']
+  ].map(([deckId,q,a],i)=>({id:i+1,deckId,q,a,last:null}))};
+}
+const saveFc=()=>store(FKEY,fc);
+let deckSel=fc.decks[0]?.id??null,S=null;
+const deckCards=id=>fc.cards.filter(c=>c.deckId===id);
+
+function renderFlash(){
+  if(!fc.decks.find(d=>d.id===deckSel))deckSel=fc.decks[0]?.id??null;
+  $('#deckGrid').innerHTML=fc.decks.map(d=>{const cs=deckCards(d.id),got=cs.filter(c=>c.last==='got').length;const cl=classes.find(c=>c.id===+d.classId);
+    return `<button type="button" class="class-card deck-card${d.id===deckSel?' selected':''}" data-deck="${d.id}"><div class="class-top"><div class="class-icon">${safe(cl?.icon||'❐')}</div><span class="tag">${cs.length} card${cs.length===1?'':'s'}</span></div>
+      <div class="class-name">${safe(d.name)}</div><div class="muted">${safe(cname(d.classId))}</div><div class="progress"><span style="width:${cs.length?got/cs.length*100:0}%"></span></div><div class="meta">${got} of ${cs.length} marked Got it</div></button>`}).join('')
+    ||'<div class="card empty">No decks yet. Make your first deck.</div>';
+  const deck=fc.decks.find(d=>d.id===deckSel),area=$('#deckArea');
+  if(!deck){area.innerHTML='';return}
+  if(S&&S.deckId===deck.id){area.innerHTML=S.mode==='study'?studyView():quizView();return}
+  const cs=deckCards(deck.id);
+  area.innerHTML=`<div class="card"><div class="card-head"><div><h3>${safe(deck.name)}</h3><span class="muted">${safe(cname(deck.classId))} · ${cs.length} card${cs.length===1?'':'s'}</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-fc="study" ${cs.length?'':'disabled'}>Study</button><button class="btn secondary" data-fc="quiz" ${cs.length>=4?'':'disabled title="A quiz needs at least 4 cards"'}>Quiz me</button><button class="btn secondary" data-fc="add-card">+ Add card</button></div></div>
+    <details class="bulk"><summary>Add many cards at once</summary><p class="muted" style="margin:8px 0 0">One card per line, term and definition split by a dash, like <b>Nucleus - Holds the cell's DNA</b></p><textarea class="field" id="bulkCards" placeholder="Term - Definition"></textarea><button class="btn secondary" data-fc="bulk">Add these cards</button></details>
+    <div class="list">${cs.length?cs.map(c=>`<div class="item"><div style="flex:1;min-width:0"><h4>${safe(c.q)}</h4><p>${safe(c.a)}</p></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${c.last==='got'?'<span class="tag priority-low">Got it</span>':c.last==='again'?'<span class="tag priority-medium">Review</span>':''}<button class="small" data-fc="del-card" data-id="${c.id}">Delete</button></div></div>`).join(''):'<div class="empty">This deck is empty. Add a card to start.</div>'}</div>
+    <p style="margin:15px 0 0;text-align:right"><button class="text-btn" data-fc="del-deck">Delete this deck</button></p></div>`;
+}
+function studyView(){
+  const total=S.total,done=total-S.queue.length;
+  if(!S.queue.length)return `<div class="card" style="text-align:center"><h3>Deck finished ✦</h3><p class="muted" style="margin:10px 0 16px">${total} cards. You marked Again ${S.again} time${S.again===1?'':'s'}.</p><div class="flash-actions"><button class="btn" data-fc="study">Study again</button><button class="btn secondary" data-fc="exit">Back to deck</button></div></div>`;
+  const c=fc.cards.find(x=>x.id===S.queue[0]);
+  return `<div class="card"><div class="card-head"><h3>Study mode</h3><span class="muted">${done} of ${total} learned</span></div><div class="progress" style="margin:0 0 16px"><span style="width:${done/total*100}%"></span></div>
+    <button type="button" class="flash${S.flipped?' back':''}" data-fc="flip"><span class="flash-side">${S.flipped?'ANSWER':'QUESTION'}</span><span class="flash-text">${safe(S.flipped?c.a:c.q)}</span><span class="muted">${S.flipped?'':'Tap to flip'}</span></button>
+    <div class="flash-actions" style="margin-top:16px">${S.flipped?'<button class="btn secondary" data-fc="again">Again</button><button class="btn" data-fc="got">Got it</button>':'<button class="btn" data-fc="flip">Show answer</button>'}</div>
+    <p style="margin:14px 0 0;text-align:center"><button class="text-btn" data-fc="exit">Stop studying</button></p></div>`;
+}
+function startQuiz(){
+  const cs=deckCards(deckSel),answers=[...new Set(cs.map(c=>c.a))];
+  S={mode:'quiz',deckId:deckSel,i:0,qs:shuffle(cs).slice(0,10).map(c=>({q:c.q,a:c.a,pick:null,opts:shuffle([c.a].concat(shuffle(answers.filter(a=>a!==c.a)).slice(0,3)))}))};
+}
+function quizView(){
+  const n=S.qs.length;
+  if(S.i>=n){const right=S.qs.filter(q=>q.pick===q.a).length,miss=S.qs.filter(q=>q.pick!==q.a);
+    return `<div class="card"><div style="text-align:center"><div class="eyebrow">YOUR SCORE</div><div class="grade" style="font-size:40px">${right} / ${n}</div><p class="muted">${Math.round(right/n*100)}%</p></div>
+      ${miss.length?`<h3 style="margin:16px 0 10px">Review your misses</h3><div class="list">${miss.map(q=>`<div class="item"><div style="flex:1;min-width:0"><h4>${safe(q.q)}</h4><p>You said: ${safe(q.pick)}</p><p style="color:#2f7357;margin-top:4px">Answer: ${safe(q.a)}</p></div></div>`).join('')}</div>`:'<p style="text-align:center;font-weight:bold">Perfect score! ✦</p>'}
+      <div class="flash-actions" style="margin-top:16px"><button class="btn" data-fc="quiz">New quiz</button><button class="btn secondary" data-fc="exit">Back to deck</button></div></div>`}
+  const q=S.qs[S.i];
+  return `<div class="card"><div class="card-head"><h3>Quiz</h3><span class="muted">Question ${S.i+1} of ${n}</span></div><div class="progress" style="margin:0 0 16px"><span style="width:${S.i/n*100}%"></span></div>
+    <h2 style="font-size:22px;letter-spacing:-.4px;overflow-wrap:anywhere">${safe(q.q)}</h2>
+    <div class="opts">${q.opts.map((o,k)=>`<button type="button" class="opt${q.pick!=null?(o===q.a?' right':o===q.pick?' wrong':''):''}" data-fc="pick" data-k="${k}" ${q.pick!=null?'disabled':''}>${safe(o)}</button>`).join('')}</div>
+    <div class="toolbar" style="margin:16px 0 0"><button class="text-btn" data-fc="exit">Quit quiz</button>${q.pick!=null?`<button class="btn" data-fc="next">${S.i+1<n?'Next question':'See score'}</button>`:''}</div></div>`;
+}
+$('#page-flashcards').addEventListener('click',e=>{
+  const dk=e.target.closest('[data-deck]');if(dk){deckSel=+dk.dataset.deck;S=null;renderFlash();return}
+  const b=e.target.closest('[data-fc]');if(!b)return;
+  switch(b.dataset.fc){
+    case 'study':{const ids=deckCards(deckSel).map(c=>c.id);S={mode:'study',deckId:deckSel,queue:shuffle(ids),total:ids.length,flipped:false,again:0};break}
+    case 'flip':S.flipped=!S.flipped;break;
+    case 'got':{const c=fc.cards.find(x=>x.id===S.queue.shift());if(c)c.last='got';S.flipped=false;saveFc();break}
+    case 'again':{const id=S.queue.shift();S.queue.push(id);const c=fc.cards.find(x=>x.id===id);if(c)c.last='again';S.again++;S.flipped=false;saveFc();break}
+    case 'quiz':startQuiz();break;
+    case 'pick':{const q=S.qs[S.i];q.pick=q.opts[+b.dataset.k];break}
+    case 'next':S.i++;break;
+    case 'exit':S=null;break;
+    case 'add-card':openModal('card');return;
+    case 'bulk':{const rows=$('#bulkCards').value.split('\n').map(l=>l.split(/\s+[-–—:]\s+|\t/)).filter(p=>p.length>=2&&p[0].trim()&&p.slice(1).join(' - ').trim());
+      rows.forEach(p=>fc.cards.push({id:newId(),deckId:deckSel,q:p[0].trim(),a:p.slice(1).join(' - ').trim(),last:null}));saveFc();
+      toast(rows.length?`Added ${rows.length} card${rows.length===1?'':'s'}.`:'No cards found. Use "Term - Definition" on each line.');break}
+    case 'del-card':fc.cards=fc.cards.filter(c=>c.id!==+b.dataset.id);saveFc();toast('Card deleted.');break;
+    case 'del-deck':{const d=fc.decks.find(x=>x.id===deckSel);fc.decks=fc.decks.filter(x=>x.id!==deckSel);fc.cards=fc.cards.filter(c=>c.deckId!==deckSel);S=null;saveFc();toast(`Deleted "${d.name}".`);break}
+  }
+  renderFlash();
+});
+$('#addDeck').onclick=()=>openModal('deck');
+
+// New deck and new card use the template's existing modal.
+const baseOpen=openModal;
+openModal=function(m){
+  if(m!=='deck'&&m!=='card')return baseOpen(m);
+  mode=m;
+  $('#modalTitle').textContent=m==='deck'?'New flashcard deck':'Add flashcard';
+  $('#modalFields').innerHTML=m==='deck'?f('Deck name','name')+sel('Class','classId',[{value:0,label:'General (no class)'}].concat(classes.map(c=>({value:c.id,label:c.name}))))
+    :`<label class="wide">Question or term<input class="field" name="q" required></label><label class="wide">Answer or definition<input class="field" name="a" required></label>`;
+  $('#modalBg').classList.add('show');
+};
+$('#modalForm').addEventListener('submit',e=>{
+  if(mode!=='deck'&&mode!=='card')return;
+  const d=Object.fromEntries(new FormData(e.target).entries());
+  if(mode==='deck'){const deck={id:newId(),name:d.name.trim(),classId:+d.classId};fc.decks.push(deck);deckSel=deck.id;S=null;toast('Deck created.')}
+  else{fc.cards.push({id:newId(),deckId:deckSel,q:d.q.trim(),a:d.a.trim(),last:null});toast('Card added.')}
+  saveFc();mode='';renderFlash();
+});
+
+/* ---------- Focus Timer ---------- */
+// The timer keeps an end time and reads the clock on every tick, so it stays accurate in a background tab.
+const MODES={focus:'FOCUS',short:'SHORT BREAK',long:'LONG BREAK'};
+const T={mode:'focus',len:1500,left:1500,end:null,iv:null,done:0};
+const CIRC=2*Math.PI*52,baseTitle=document.title;
+let audio=null,log=load(LKEY,{});
+if(typeof log!=='object'||!log)log={};
+const modeLen=m=>m==='focus'?+$('#focusLen').value*60:m==='short'?300:900;
+function stopTick(){clearInterval(T.iv);T.iv=null}
+function setMode(m){stopTick();T.mode=m;T.len=T.left=modeLen(m);$('#startTimer').textContent='Start';drawTimer()}
+function drawTimer(){
+  const mm=String(Math.floor(T.left/60)).padStart(2,'0'),ss=String(T.left%60).padStart(2,'0');
+  $('#clock').textContent=mm+':'+ss;$('#clockMode').textContent=MODES[T.mode];
+  const r=$('#ringProg');r.style.strokeDasharray=CIRC;r.style.strokeDashoffset=CIRC*(1-T.left/T.len);
+  $$('[data-tmode]').forEach(b=>b.classList.toggle('on',b.dataset.tmode===T.mode));
+  document.title=T.iv?`${mm}:${ss} · ${T.mode==='focus'?'Focus':'Break'} — StudyFlow`:baseTitle;
+}
+function renderLog(){
+  const days=[...Array(7)].map((_,i)=>{const d=new Date(today);d.setDate(d.getDate()+i-6);return d});
+  const vals=days.map(d=>log[iso(d)]||0),max=Math.max(60,...vals),week=vals.reduce((a,b)=>a+b,0);
+  let streak=0,d=new Date(today);if(!(log[iso(d)]>0))d.setDate(d.getDate()-1);while(log[iso(d)]>0){streak++;d.setDate(d.getDate()-1)}
+  $('#streakTag').textContent=`${streak} day streak`;
+  $('#focusStats').innerHTML=`<div><small class="muted">Today</small><b>${vals[6]} min</b></div><div><small class="muted">Last 7 days</small><b>${week} min</b></div><div><small class="muted">This visit</small><b>${T.done}</b></div>`;
+  $('#focusBars').innerHTML=days.map((d,i)=>`<div class="bar${i===6?' now':''}"><span>${vals[i]||''}</span><i style="height:${Math.max(3,vals[i]/max*80)}%"></i><span>${d.toLocaleDateString(undefined,{weekday:'narrow'})}</span></div>`).join('');
+}
+function renderFocusTasks(){const v=$('#focusTask').value;$('#focusTask').innerHTML='<option value="">Nothing specific</option>'+tasks.filter(t=>!t.done).sort((a,b)=>a.due.localeCompare(b.due)).map(t=>`<option value="${t.id}"${String(t.id)===v?' selected':''}>${safe(t.title)}</option>`).join('')}
+function chime(){try{if(!audio)return;const t=audio.currentTime;[660,880,990].forEach((hz,i)=>{const o=audio.createOscillator(),g=audio.createGain(),s=t+i*.22;o.frequency.value=hz;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.25,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.5);o.connect(g).connect(audio.destination);o.start(s);o.stop(s+.55)})}catch(e){}}
+function tick(){T.left=Math.max(0,Math.ceil((T.end-Date.now())/1000));drawTimer();if(T.left<=0)finish()}
+function finish(){
+  stopTick();chime();
+  if(T.mode==='focus'){const m=Math.round(T.len/60),k=iso(new Date());log[k]=(log[k]||0)+m;store(LKEY,log);T.done++;
+    const tk=tasks.find(t=>String(t.id)===$('#focusTask').value),next=T.done%4===0?'long':'short';setMode(next);
+    $('#timerMsg').textContent=`Nice work! ${m} minutes${tk?' on '+tk.title:''} logged. Time for a ${next==='long'?'15':'5'}-minute break.`;toast('Focus session complete ✦')}
+  else{setMode('focus');$('#timerMsg').textContent='Break over. Ready for the next focus session?'}
+  renderLog();
+}
+$('#startTimer').onclick=()=>{
+  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  if(T.iv){stopTick();T.left=Math.max(0,Math.ceil((T.end-Date.now())/1000));$('#startTimer').textContent='Resume';$('#timerMsg').textContent='Paused.';drawTimer();return}
+  T.end=Date.now()+T.left*1000;T.iv=setInterval(tick,250);$('#startTimer').textContent='Pause';
+  $('#timerMsg').textContent=T.mode==='focus'?'Focus time. One thing at a time.':'Take a real break. Stand up and stretch.';drawTimer();
+};
+$('#resetTimer').onclick=()=>{setMode(T.mode);$('#timerMsg').textContent='Timer reset.'};
+$('#focusLen').onchange=()=>{if(!T.iv&&T.mode==='focus')setMode('focus')};
+$$('[data-tmode]').forEach(b=>b.onclick=()=>{if(T.iv&&!b.dataset.armed){b.dataset.armed='1';toast('Timer is running. Tap again to switch.');setTimeout(()=>delete b.dataset.armed,3000);return}delete b.dataset.armed;setMode(b.dataset.tmode);$('#timerMsg').textContent='Ready when you are.'});
+document.addEventListener('visibilitychange',()=>{if(T.iv)tick()});
+
+/* ---------- Page hooks ---------- */
+const baseGo=go;
+go=function(p){baseGo(p);if(p==='flashcards')renderFlash();if(p==='focus'){renderFocusTasks();renderLog()}};
+
+/* ---------- Color presets ---------- */
+const PRESETS=[['Sky','#4f8fe8','#e8f4ff','#e4efff','#ffffff','#25466d'],['Mint','#2fa57c','#e6f7f0','#e2f3fb','#ffffff','#24504a'],['Lavender','#8b6fe0','#f1ecff','#e7efff','#ffffff','#3d3566'],['Peach','#e8875b','#fff1e8','#ffeef3','#ffffff','#5a3a2e'],['Rose','#df5f8e','#ffeef4','#f3ecff','#ffffff','#5a2f45']];
+$('#colorPresets').innerHTML=PRESETS.map((p,i)=>`<button type="button" class="preset" data-preset="${i}"><i style="background:linear-gradient(135deg,${p[2]} 0 48%,${p[1]} 48%)"></i>${p[0]}</button>`).join('');
+$('#colorPresets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(!b)return;const p=PRESETS[+b.dataset.preset];
+  applyColors({accent:p[1],background:p[2],background2:p[3],cards:p[4],text:p[5]});saveColors();toast(`${p[0]} colors applied.`)});
+
+setMode('focus');renderFlash();
+})();
+</script>
+<script>
+// Secret Room games: Cookie Clicker, Memory Match and Math Sprint. Progress and best scores are saved in this browser.
+(function(){
+const GKEY='studyflowGames';
+try{const old=JSON.parse(localStorage.getItem(GKEY));if(old&&old.clicker&&old.clicker.owned&&old.clicker.owned.pencil!==undefined){old.clicker={stars:0,owned:{}};localStorage.setItem(GKEY,JSON.stringify(old))}}catch(e){}
+let G;try{G=JSON.parse(localStorage.getItem(GKEY))}catch(e){}
+if(!G||typeof G!=='object')G={};
+G.clicker=Object.assign({stars:0,owned:{}},G.clicker||{});
+const saveG=()=>{try{localStorage.setItem(GKEY,JSON.stringify(G))}catch(e){}};
+const compact=new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1});
+const nf=n=>n<10000?Math.floor(n).toLocaleString():compact.format(Math.floor(n));
+
+/* ---------- Tabs ---------- */
+$$('[data-game]').forEach(b=>b.onclick=()=>{
+  $$('[data-game]').forEach(x=>x.classList.toggle('on',x===b));
+  ['clicker','memory','sprint','wordle','typing'].forEach(g=>$('#game-'+g).hidden=g!==b.dataset.game);
+});
+
+/* ---------- Study Clicker ---------- */
+const UPG=[
+  {id:'cursor',icon:'👆',name:'Cursor',desc:'+1 cookie per click',cost:15,click:1},
+  {id:'grandma',icon:'👵',name:'Grandma',desc:'+1 cookie per second',cost:50,rate:1},
+  {id:'oven',icon:'🔥',name:'Oven',desc:'+4 cookies per second',cost:250,rate:4},
+  {id:'farm',icon:'🌾',name:'Farm',desc:'+15 cookies per second',cost:1200,rate:15},
+  {id:'bakery',icon:'🏠',name:'Bakery',desc:'+60 cookies per second',cost:6000,rate:60},
+  {id:'factory',icon:'🏭',name:'Factory',desc:'+250 cookies per second',cost:30000,rate:250}];
+const C=G.clicker,owned=id=>C.owned[id]||0;
+const price=u=>Math.ceil(u.cost*Math.pow(1.15,owned(u.id)));
+const perClick=()=>1+UPG.reduce((s,u)=>s+(u.click||0)*owned(u.id),0);
+const perSec=()=>UPG.reduce((s,u)=>s+(u.rate||0)*owned(u.id),0);
+function renderShop(){
+  $('#ckShop').innerHTML=UPG.map(u=>`<button type="button" class="item upgrade" data-buy="${u.id}"><span class="up-icon">${u.icon}</span><div style="flex:1;min-width:0"><h4>${u.name}</h4><p>${u.desc}</p></div><div style="text-align:right"><b data-price="${u.id}">🍪 ${nf(price(u))}</b><p data-owned="${u.id}">Owned: ${owned(u.id)}</p></div></button>`).join('');
+  updateClicker();
+}
+// Updates numbers in place instead of redrawing, so a click on an upgrade is never lost mid-redraw.
+function updateClicker(){
+  $('#ckStars').textContent=nf(C.stars);
+  $('#ckRate').textContent=`${nf(perSec())} per second · ${nf(perClick())} per click`;
+  UPG.forEach(u=>{const b=$(`[data-buy="${u.id}"]`);if(!b)return;b.disabled=C.stars<price(u);
+    b.querySelector(`[data-price="${u.id}"]`).textContent='🍪 '+nf(price(u));b.querySelector(`[data-owned="${u.id}"]`).textContent='Owned: '+owned(u.id)});
+}
+$('#ckBook').addEventListener('click',e=>{
+  const n=perClick();C.stars+=n;updateClicker();
+  const wrap=$('#ckBook').parentNode,r=wrap.getBoundingClientRect(),p=document.createElement('span');
+  p.className='pop';p.textContent='+'+nf(n);
+  const x=e.clientX?e.clientX-r.left:r.width/2,y=e.clientY?e.clientY-r.top:r.height/2;
+  p.style.left=(x-10)+'px';p.style.top=(y-20)+'px';wrap.appendChild(p);setTimeout(()=>p.remove(),800);
+});
+$('#ckShop').addEventListener('click',e=>{const b=e.target.closest('[data-buy]');if(!b)return;const u=UPG.find(x=>x.id===b.dataset.buy),c=price(u);
+  if(C.stars<c)return;C.stars-=c;C.owned[u.id]=owned(u.id)+1;saveG();updateClicker();toast(`${u.name} bought!`)});
+$('#ckReset').onclick=function(){
+  if(!this.dataset.armed){this.dataset.armed='1';this.textContent='Tap again to reset';setTimeout(()=>{delete this.dataset.armed;this.textContent='Start over'},3000);return}
+  delete this.dataset.armed;this.textContent='Start over';C.stars=0;C.owned={};saveG();updateClicker();toast('Cookie Clicker reset.');
+};
+let last=Date.now(),lastSave=Date.now();
+setInterval(()=>{const now=Date.now(),dt=Math.min(60,(now-last)/1000);last=now;
+  if(perSec()){C.stars+=perSec()*dt;if($('#page-secret').classList.contains('active'))updateClicker()}
+  if(now-lastSave>3000){lastSave=now;saveG()}},100);
+document.addEventListener('visibilitychange',saveG);
+window.addEventListener('pagehide',saveG);
+
+/* ---------- Memory Match ---------- */
+const ICONS=['📐','📚','✏️','🔬','🧪','🌍','🎨','🎵'];
+let M;
+function memNew(){
+  clearInterval(M?.iv);
+  M={cards:shuffleArr(ICONS.concat(ICONS)).map(icon=>({icon,up:false,done:false})),open:[],moves:0,start:null,iv:null,lock:false};
+  $('#memMsg').textContent='Find all 8 pairs in as few moves as you can.';memDraw();
+}
+function shuffleArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const clockText=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+function memDraw(){
+  $('#memGrid').innerHTML=M.cards.map((c,i)=>`<button type="button" class="mcard${c.up?' up':''}${c.done?' done':''}" data-card="${i}" aria-label="${c.up||c.done?c.icon:'Hidden card'}" ${c.done?'disabled':''}><span>${c.icon}</span></button>`).join('');
+  $('#memMoves').textContent=`${M.moves} move${M.moves===1?'':'s'}`;
+  $('#memBest').textContent='Best: '+(G.memBest?G.memBest+' moves':'—');
+}
+$('#memGrid').addEventListener('click',e=>{
+  const b=e.target.closest('[data-card]');if(!b||M.lock)return;const c=M.cards[+b.dataset.card];if(c.up||c.done)return;
+  if(!M.start){M.start=Date.now();M.iv=setInterval(()=>$('#memTime').textContent=clockText(Math.floor((Date.now()-M.start)/1000)),500)}
+  c.up=true;M.open.push(c);
+  if(M.open.length===2){M.moves++;const[a,z]=M.open;
+    if(a.icon===z.icon){a.done=z.done=true;a.up=z.up=false;M.open=[];
+      if(M.cards.every(x=>x.done)){clearInterval(M.iv);const secs=Math.floor((Date.now()-M.start)/1000),best=!G.memBest||M.moves<G.memBest;
+        if(best){G.memBest=M.moves;saveG()}
+        $('#memMsg').textContent=`All pairs found in ${M.moves} moves and ${clockText(secs)}.${best?' New best!':''}`}}
+    else{M.lock=true;setTimeout(()=>{a.up=z.up=false;M.open=[];M.lock=false;memDraw()},750)}}
+  memDraw();
+});
+$('#memNew').onclick=()=>{memNew();$('#memTime').textContent='0:00'};
+
+/* ---------- Math Sprint ---------- */
+let SP=null;
+function spIntro(msg){
+  $('#spStage').innerHTML=`${msg||'<p class="muted" style="text-align:center;line-height:1.7">Answer as many math questions as you can in 60 seconds.<br>Type the answer. A correct answer moves on by itself.</p>'}<p style="text-align:center;margin:14px 0 0"><button class="btn" id="spStart">${msg?'Play again':'Start'}</button></p>`;
+  $('#spStart').onclick=spStart;$('#spBest').textContent='Best: '+(G.spBest||0);
+}
+function spQuestion(){
+  const k=Math.floor(Math.random()*3);let a,b,ans,sym;
+  if(k===0){a=2+Math.floor(Math.random()*49);b=2+Math.floor(Math.random()*49);ans=a+b;sym='+'}
+  else if(k===1){a=10+Math.floor(Math.random()*51);b=1+Math.floor(Math.random()*a);ans=a-b;sym='−'}
+  else{a=2+Math.floor(Math.random()*11);b=2+Math.floor(Math.random()*11);ans=a*b;sym='×'}
+  SP.ans=ans;$('#spQ').textContent=`${a} ${sym} ${b}`;$('#spIn').value='';$('#spIn').focus();
+}
+function spStart(){
+  SP={score:0,end:Date.now()+60000,ans:0};
+  $('#spStage').innerHTML=`<div class="sprint-q" id="spQ"></div><input class="field sprint-input" id="spIn" inputmode="numeric" autocomplete="off" aria-label="Your answer"><p style="text-align:center;margin:12px 0 0"><button class="btn secondary" id="spSkip" type="button">Skip</button></p>`;
+  $('#spIn').addEventListener('input',()=>{if(+$('#spIn').value.trim()===SP.ans&&$('#spIn').value.trim()!==''){SP.score++;$('#spScore').textContent='Score: '+SP.score;spQuestion()}});
+  $('#spSkip').onclick=spQuestion;
+  $('#spScore').textContent='Score: 0';spQuestion();
+  SP.iv=setInterval(()=>{const left=Math.max(0,Math.ceil((SP.end-Date.now())/1000));$('#spTime').textContent=left+'s';if(!left)spEnd()},200);
+}
+function spEnd(){
+  clearInterval(SP.iv);const best=SP.score>(G.spBest||0);if(best){G.spBest=SP.score;saveG()}
+  spIntro(`<div style="text-align:center"><div class="eyebrow">TIME'S UP</div><div class="grade" style="font-size:40px">${SP.score}</div><p class="muted">correct answer${SP.score===1?'':'s'}${best?' · New best! ✦':''}</p></div>`);
+  $('#spTime').textContent='60s';SP=null;
+}
+
+renderShop();memNew();spIntro();
+})();
+</script>
+<script>
+// Wordle: guess a 5-letter word in 6 tries. Stats are saved in this browser.
+(function(){
+const WORDS=('apple beach bread brain brush candy chair chalk cheer chess class clock cloud coach coral crane crisp crown dance diary dream drink eagle earth essay fable field flame flash float flute focus frost fruit ghost giant globe grade grape graph grass green heart honey horse house juice knife laugh lemon light lunch magic maple march metal money month mouse music night notes ocean olive orbit paint panda paper party peach pearl penny phone piano pilot pizza plant plate poems point pupil quiet quilt quote radio raven ready river robot rocky round ruler salad scale scene score shape share shark sheep shelf shine shirt skate skill sleep smile snack snake space spark spell spice spoon sport stamp stand steam stone storm story sugar sunny swing table teach tiger toast tooth topic tower track train treat truck trust tulip uncle unity value voice water whale wheat while world write yacht young zebra about above actor adult agree alarm album alert alive alley angel anger ankle arrow atlas audio award badge bagel baker basic beard berry bingo blank blaze blend block bloom board bonus boost brave brick bring brook brown cabin camel canal cargo cedar chart chief child cider civic claim clean clear climb close cocoa comet count cover craft cream crumb cubic curve daily daisy delta depth digit dizzy dough draft drama dwarf early elbow empty enjoy equal event extra fairy faith fancy feast fiber final first flock floor fresh frog' ).split(' ').filter(w=>/^[a-z]{5}$/.test(w));
+const KEY='studyflowWordle';
+let st;try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+st=Object.assign({played:0,wins:0,streak:0,best:0},st||{});
+const saveSt=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+let W;
+
+function newGame(){
+  W={answer:WORDS[Math.floor(Math.random()*WORDS.length)],rows:[],cur:'',over:false,keys:{}};
+  $('#wdMsg').textContent='Guess the 5-letter word in 6 tries.';draw();
+}
+// Two passes so repeated letters are colored like the real game: greens first, then yellows from what is left.
+function score(guess,ans){
+  const res=Array(5).fill('x'),left={};
+  for(let i=0;i<5;i++){if(guess[i]===ans[i])res[i]='g';else left[ans[i]]=(left[ans[i]]||0)+1}
+  for(let i=0;i<5;i++){if(res[i]!=='g'&&left[guess[i]]){res[i]='y';left[guess[i]]--}}
+  return res;
+}
+function draw(){
+  let h='';
+  for(let r=0;r<6;r++){const row=W.rows[r],word=row?row.word:(r===W.rows.length?W.cur:'');
+    h+=`<div class="wd-row" id="wdRow${r}">`+[0,1,2,3,4].map(i=>`<div class="wd-tile${row?' '+row.res[i]:word[i]?' filled':''}">${word[i]||''}</div>`).join('')+'</div>'}
+  $('#wdGrid').innerHTML=h;
+  const rows=['qwertyuiop','asdfghjkl','+zxcvbnm-'];
+  $('#wdKb').innerHTML=rows.map(r=>`<div class="wd-kr">${[...r].map(k=>k==='+'?'<button type="button" class="wd-key wide" data-key="enter">ENTER</button>':k==='-'?'<button type="button" class="wd-key wide" data-key="back" aria-label="Delete letter">⌫</button>':`<button type="button" class="wd-key ${W.keys[k]||''}" data-key="${k}">${k.toUpperCase()}</button>`).join('')}</div>`).join('');
+  $('#wdPlayed').textContent='Played: '+st.played;
+  $('#wdWins').textContent='Won: '+(st.played?Math.round(st.wins/st.played*100):0)+'%';
+  $('#wdStreak').textContent='Streak: '+st.streak+(st.best?` (best ${st.best})`:'');
+}
+function shake(){const row=$('#wdRow'+W.rows.length);if(!row)return;row.classList.remove('shake');void row.offsetWidth;row.classList.add('shake')}
+function press(k){
+  if(W.over)return;
+  if(k==='back'){W.cur=W.cur.slice(0,-1);draw();return}
+  if(k==='enter'){
+    if(W.cur.length<5){$('#wdMsg').textContent='Not enough letters.';shake();return}
+    const res=score(W.cur,W.answer);W.rows.push({word:W.cur,res});
+    [...W.cur].forEach((c,i)=>{const rank={g:3,y:2,x:1},now=W.keys[c];if(!now||rank[res[i]]>rank[now])W.keys[c]=res[i]});
+    const won=W.cur===W.answer;W.cur='';
+    if(won||W.rows.length===6){W.over=true;st.played++;
+      if(won){st.wins++;st.streak++;st.best=Math.max(st.best,st.streak);$('#wdMsg').textContent=['Genius!','Magnificent!','Impressive!','Splendid!','Great!','Phew!'][W.rows.length-1]+` You got it in ${W.rows.length}.`;toast('Wordle solved ✦')}
+      else{st.streak=0;$('#wdMsg').textContent=`The word was ${W.answer.toUpperCase()}. Try another!`}
+      saveSt()}
+    else $('#wdMsg').textContent=`${6-W.rows.length} ${6-W.rows.length===1?'try':'tries'} left.`;
+    draw();return;
+  }
+  if(/^[a-z]$/.test(k)&&W.cur.length<5){W.cur+=k;draw()}
+}
+$('#wdKb').addEventListener('click',e=>{const b=e.target.closest('[data-key]');if(b)press(b.dataset.key)});
+$('#wdNew').onclick=()=>{
+  // Leaving a game half-played counts as a loss, like closing the real game.
+  if(!W.over&&W.rows.length){st.played++;st.streak=0;saveSt()}
+  newGame();
+};
+document.addEventListener('keydown',e=>{
+  if(!$('#page-secret').classList.contains('active')||$('#game-wordle').hidden||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.target instanceof Element&&e.target.closest('input,textarea,select'))return;
+  const k=e.key.toLowerCase();
+  if(k==='enter'){e.preventDefault();press('enter')}else if(k==='backspace'){press('back')}else if(/^[a-z]$/.test(k))press(k);
+});
+newGame();
+})();
+</script>
+<script>
+// Settings switch: show or hide the Focus Timer. The choice is saved in this browser.
+(function(){
+const K='studyflowFocusEnabled',navBtn=$('.nav[data-page="focus"]'),box=$('#focusToggle');
+let on=true;try{on=localStorage.getItem(K)!=='off'}catch(e){}
+function apply(){navBtn.hidden=!on;box.checked=on;$('#focusToggleState').textContent=on?'On':'Off'}
+box.onchange=()=>{
+  on=box.checked;try{localStorage.setItem(K,on?'on':'off')}catch(e){}
+  if(!on){if($('#startTimer').textContent!=='Start')$('#resetTimer').click();if($('#page-focus').classList.contains('active'))go('dashboard')}
+  apply();toast(on?'Focus Timer turned on.':'Focus Timer turned off.');
+};
+apply();
+})();
+</script>
+<script>
+// Settings switch: turn the Secret Room on or off. The choice is saved in this browser.
+(function(){
+const K='studyflowSecretEnabled',box=$('#secretToggle'),row=$('#secretRow');
+let on=true;try{on=localStorage.getItem(K)!=='off'}catch(e){}
+// Runs before the hat's own click handler and stops it while the room is off.
+document.addEventListener('click',e=>{if(!on&&e.target instanceof Element&&e.target.closest('#hat')){e.stopPropagation();go('dashboard')}},true);
+function apply(){box.checked=on;$('#secretToggleState').textContent=on?'On':'Off'}
+box.onchange=()=>{
+  on=box.checked;try{localStorage.setItem(K,on?'on':'off')}catch(e){}
+  if(!on&&$('#page-secret').classList.contains('active'))go('dashboard');
+  apply();toast(on?'Secret Room turned on.':'Secret Room turned off.');
+};
+// The switch stays hidden until the Features heading is clicked 5 times quickly, and hides again when you leave Settings.
+let taps=0,tapTimer;
+$('#featuresTitle').addEventListener('click',()=>{taps++;clearTimeout(tapTimer);tapTimer=setTimeout(()=>taps=0,2000);if(taps>=5){taps=0;row.hidden=false}});
+const prevGo=go;
+go=function(p){if(p!=='settings')row.hidden=true;prevGo(p)};
+apply();
+})();
+</script>
+<script>
+// Clicking the graduation hat goes back to the Dashboard. The fifth quick click still opens the Secret Room.
+(function(){
+let before='';
+document.addEventListener('click',e=>{if(e.target instanceof Element&&e.target.closest('#hat'))before=$('.page.active')?.id||''},true);
+$('#hat').addEventListener('click',()=>{
+  const now=$('.page.active')?.id;
+  if(now==='page-secret'&&before!=='page-secret')return;
+  go('dashboard');
+});
+})();
+</script>
+<script>
+// Typing Speed: type the passage before 60 seconds run out. The best WPM is saved in this browser.
+(function(){
+const PASSAGES=[
+ 'The best way to remember something is to practice pulling it out of your memory. Close your notes, write down everything you know, and then check what you missed.',
+ 'Photosynthesis is the process plants use to turn sunlight, water, and carbon dioxide into sugar and oxygen. It happens inside tiny parts of the cell called chloroplasts.',
+ 'A good essay starts with a clear main idea. Each paragraph should support that idea with evidence, and the conclusion should remind the reader why it matters.',
+ 'Small steps add up. Twenty minutes of focused work each day will take you further than one long night of cramming before a test.',
+ 'The water cycle moves water around the planet. Water evaporates from oceans, forms clouds, falls as rain or snow, and flows back to the sea through rivers.',
+ 'When you get stuck on a math problem, write down what you know, what you need to find, and one small step you can take next. Then take that step.',
+ 'Ancient Rome began as a small town on the Tiber River and grew into an empire that stretched across Europe, North Africa, and the Middle East.',
+ 'Reading every day builds your vocabulary without you even noticing. Pick a book you enjoy, and read just ten pages before bed.'];
+const KEY='studyflowTyping',LIMIT=60;
+let best=0;try{best=+localStorage.getItem(KEY)||0}catch(e){}
+let T={};
+const box=$('#tyInput');
+
+function reset(newText){
+  clearInterval(T.iv);
+  let text=T.text;if(newText||!text){do{text=PASSAGES[Math.floor(Math.random()*PASSAGES.length)]}while(text===T.text&&PASSAGES.length>1)}
+  T={text,start:null,iv:null,done:false};
+  box.value='';box.disabled=false;
+  $('#tyMsg').textContent='Start typing to begin the 60-second clock.';
+  draw();
+}
+function stats(){
+  const typed=box.value,mins=T.start?Math.max((Date.now()-T.start)/60000,1/12):0; // counts at least 5 seconds so WPM doesn't spike on the first keystrokes
+  let ok=0;for(let i=0;i<typed.length;i++)if(typed[i]===T.text[i])ok++;
+  return {left:T.start?Math.max(0,LIMIT-Math.floor((Date.now()-T.start)/1000)):LIMIT,wpm:mins?Math.round(ok/5/mins):0,acc:typed.length?Math.round(ok/typed.length*100):100,typed:typed.length};
+}
+function draw(){
+  const typed=box.value;
+  $('#tyText').innerHTML=[...T.text].map((c,i)=>{const cls=i<typed.length?(typed[i]===c?'ok':'bad'):i===typed.length?'cur':'';
+    return `<span${cls?` class="${cls}"`:''}>${c===' '&&cls==='bad'?'·':safe(c)}</span>`}).join('');
+  const s=stats();
+  $('#tyTime').textContent=s.left+'s';$('#tyWpm').textContent='WPM: '+s.wpm;$('#tyAcc').textContent='Accuracy: '+s.acc+'%';$('#tyBest').textContent='Best: '+best+' WPM';
+}
+function finish(){
+  if(T.done)return;T.done=true;clearInterval(T.iv);box.disabled=true;
+  const s=stats(),isBest=s.wpm>best;
+  if(isBest){best=s.wpm;try{localStorage.setItem(KEY,best)}catch(e){}}
+  draw();
+  $('#tyMsg').textContent=`${s.wpm} words per minute with ${s.acc}% accuracy.${isBest?' New best! ✦':''} Press Try again or New passage.`;
+  if(isBest)toast('New typing record ✦');
+}
+box.addEventListener('input',()=>{
+  if(T.done)return;
+  if(box.value.length>T.text.length)box.value=box.value.slice(0,T.text.length);
+  if(!T.start&&box.value.length){T.start=Date.now();$('#tyMsg').textContent='Keep going…';T.iv=setInterval(()=>{draw();if(stats().left<=0)finish()},250)}
+  draw();
+  if(box.value.length===T.text.length)finish();
+});
+box.addEventListener('paste',e=>e.preventDefault());
+$('#tyAgain').onclick=()=>{reset(false);box.focus()};
+$('#tyNew').onclick=()=>{reset(true);box.focus()};
+$('#tyText').onclick=()=>box.focus();
+reset(true);
+})();
+</script>
+</body></html>
