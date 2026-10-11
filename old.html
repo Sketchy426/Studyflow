@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudyFlow</title>
+<style>
+:root{--bg:#f4f7ff;--card:#fff;--text:#1e2b46;--blue:#5278f5;--muted:#71809a}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--card);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px #172b4d0d}
+.logo{font-size:22px;font-weight:800;color:var(--blue)}
+button,input{font:inherit}
+button{cursor:pointer;border:0;border-radius:10px;background:var(--blue);color:white;padding:11px 15px;font-weight:600}
+button.secondary{background:#e9efff;color:#3458c5}
+.layout{display:flex;min-height:calc(100vh - 65px)}
+nav{width:210px;padding:20px 12px;background:var(--card)}
+nav button{display:block;width:100%;text-align:left;margin:5px 0;background:transparent;color:var(--text)}
+nav button:hover,nav button.active{background:#eaf0ff;color:#3458c5}
+main{padding:28px;width:100%;max-width:1100px;margin:auto}
+h1{margin-top:0}
+.muted{color:var(--muted);line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.card{background:var(--card);padding:22px;border-radius:18px;margin-bottom:16px;box-shadow:0 5px 22px #243b6609}
+.stat{font-size:30px;font-weight:800;margin:12px 0}
+input{padding:12px;border:1px solid #dce3f1;border-radius:10px;width:100%;margin:7px 0 12px;background:var(--card);color:var(--text)}
+.task{padding:12px 0;border-bottom:1px solid #e9edf5;display:flex;align-items:center;gap:10px}
+.task input{width:auto;margin:0}
+.page{display:none}.page.active{display:block}
+#game{width:100%;height:65vh;min-height:350px;border:0;border-radius:12px;background:#10151d}
+.hat{font-size:24px;padding:5px 10px;background:transparent}
+footer{color:var(--muted);font-size:12px;margin-top:22px}
+body.dark{--bg:#101522;--card:#1b2435;--text:#edf2ff;--muted:#a9b5cc}
+body.dark nav button{color:var(--text)}
+body.dark nav button.active{background:#2c3955;color:#cbd8ff}
+@media(max-width:650px){.layout{display:block}nav{width:100%;display:flex;overflow-x:auto;padding:8px}nav button{min-width:max-content;width:auto}main{padding:16px}header{padding:13px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">✦ StudyFlow</div>
+  <button class="hat" id="hat" title="Click five times to unlock the Secret Room">🎓</button>
+</header>
+
+<div class="layout">
+<nav>
+  <button class="active" data-page="home">🏠 Dashboard</button>
+  <button data-page="tasks">📝 Assignments</button>
+  <button data-page="focus">⏱️ Focus Timer</button>
+  <button data-page="cards">🗂️ Flashcards</button>
+  <button data-page="settings">⚙️ Settings</button>
+</nav>
+
+<main>
+<section class="page active" id="home">
+  <h1>Welcome to StudyFlow ✨</h1>
+  <p class="muted">Your school life, organized in one place.</p>
+  <div class="grid">
+    <div class="card"><div>Assignments left</div><div class="stat" id="remaining">0</div><p class="muted">Keep making progress!</p></div>
+    <div class="card"><div>Completed</div><div class="stat" id="completed">0</div><p class="muted">Every step counts.</p></div>
+  </div>
+  <div class="card"><h3>Today's plan</h3><p class="muted">Add your assignments and choose one small task to start with.</p><button onclick="showPage('tasks')">View assignments →</button></div>
+  <div class="card"><h3>Study tip 💡</h3><p>Try focusing on one task for 25 minutes, then take a short break.</p><button onclick="showPage('focus')">Start a focus session</button></div>
+</section>
+
+<section class="page" id="tasks">
+  <h1>📝 Assignments</h1>
+  <div class="card">
+    <label for="taskName">Assignment name</label>
+    <input id="taskName" placeholder="e.g. Finish math homework">
+    <label for="taskDue">Due date (optional)</label>
+    <input id="taskDue" type="date">
+    <button id="addTask">+ Add assignment</button>
+  </div>
+  <div class="card"><h3>Your tasks</h3><div id="taskList"></div></div>
+</section>
+
+<section class="page" id="focus">
+  <h1>⏱️ Focus Timer</h1>
+  <div class="card" style="text-align:center">
+    <p class="muted">Time to focus on one thing.</p>
+    <div class="stat" id="clock" style="font-size:56px">25:00</div>
+    <label for="minutes">Session length</label>
+    <select id="minutes" style="padding:10px;border-radius:9px">
+      <option value="15">15 minutes</option>
+      <option value="25" selected>25 minutes</option>
+      <option value="30">30 minutes</option>
+      <option value="45">45 minutes</option>
+      <option value="60">60 minutes</option>
+    </select>
+    <p><button id="startTimer">Start</button> <button class="secondary" id="resetTimer">Reset</button></p>
+    <p id="timerMessage" class="muted">Ready when you are!</p>
+  </div>
+</section>
+
+<section class="page" id="cards">
+  <h1>🗂️ Flashcards</h1>
+  <div class="card">
+    <input id="question" placeholder="Question or term">
+    <input id="answer" placeholder="Answer or definition">
+    <button id="addCard">Add flashcard</button>
+  </div>
+  <div id="flashList" class="grid"></div>
+</section>
+
+<section class="page" id="settings">
+  <h1>⚙️ Settings</h1>
+  <div class="card">
+    <h3>Personalize StudyFlow</h3>
+    <button id="themeButton">Toggle dark mode 🌙</button>
+    <p class="muted">Your tasks and flashcards are saved in this browser on this device.</p>
+  </div>
+</section>
+
+<section class="page" id="secret">
+  <h1>🔒 Secret Room</h1>
+  <div class="card">
+    <h2>🎮 Eaglercraft 26.2</h2>
+    <p class="muted">You discovered the secret! The game is loading below if its website allows embedding.</p>
+    <p><button id="reloadGame">Reload game</button> <button class="secondary" id="fullGame">Fullscreen</button>
+    <a href="https://eaglercraft.com/play?version=26.2" target="_blank" rel="noopener noreferrer"><button class="secondary">Open in new tab ↗</button></a></p>
+    <iframe id="game" title="Eaglercraft 26.2" src="https://eaglercraft.com/play?version=26.2" allow="fullscreen; gamepad; clipboard-read; clipboard-write" allowfullscreen referrerpolicy="no-referrer"></iframe>
+    <p class="muted">If the game doesn't appear, the host may block embedding. Use Open in new tab instead.</p>
+    <button class="secondary" onclick="showPage('home')">← Back to StudyFlow</button>
+  </div>
+</section>
+
+<footer>StudyFlow saves demo data in this browser. It does not provide accounts, cloud sync, or live school integrations.</footer>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function read(key,fallback){try{return JSON.parse(localStorage.getItem('sf_'+key))??fallback}catch{return fallback}}
+function save(key,value){try{localStorage.setItem('sf_'+key,JSON.stringify(value))}catch{}}
+let tasks=read('tasks',[]),cards=read('cards',[]);
+function showPage(name){
+ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===name));
+ document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===name));
+ window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function renderTasks(){
+ $('taskList').innerHTML='';
+ tasks.forEach((t,i)=>{
+  const row=document.createElement('div');row.className='task';
+  const check=document.createElement('input');check.type='checkbox';check.checked=t.done;check.onchange=()=>{tasks[i].done=check.checked;save('tasks',tasks);renderTasks()};
+  const label=document.createElement('span');label.style.flex='1';label.textContent=t.name+(t.due?' · Due '+t.due:'');if(t.done)label.style.textDecoration='line-through';
+  const del=document.createElement('button');del.textContent='×';del.className='secondary';del.onclick=()=>{tasks.splice(i,1);save('tasks',tasks);renderTasks()};
+  row.append(check,label,del);$('taskList').append(row);
+ });
+ $('remaining').textContent=tasks.filter(t=>!t.done).length;
+ $('completed').textContent=tasks.filter(t=>t.done).length;
+ if(!tasks.length)$('taskList').textContent='No assignments yet. Add one above!';
+}
+$('addTask').onclick=()=>{
+ const name=$('taskName').value.trim();if(!name){alert('Please enter an assignment name.');return}
+ tasks.push({name,due:$('taskDue').value,done:false});save('tasks',tasks);$('taskName').value='';$('taskDue').value='';renderTasks();
+};
+function renderCards(){
+ $('flashList').innerHTML='';
+ cards.forEach((c,i)=>{
+  const box=document.createElement('div');box.className='card';
+  const q=document.createElement('h3');q.textContent=c.q;
+  const a=document.createElement('p');a.className='muted';a.textContent=c.show?c.a:'Think of the answer, then reveal it.';
+  const reveal=document.createElement('button');reveal.textContent=c.show?'Hide answer':'Reveal answer';reveal.className='secondary';reveal.onclick=()=>{cards[i].show=!cards[i].show;renderCards()};
+  const del=document.createElement('button');del.textContent='Delete';del.style.marginLeft='6px';del.onclick=()=>{cards.splice(i,1);save('cards',cards);renderCards()};
+  box.append(q,a,reveal,del);$('flashList').append(box);
+ });
+}
+$('addCard').onclick=()=>{let q=$('question').value.trim(),a=$('answer').value.trim();if(!q||!a){alert('Enter both a question and an answer.');return}cards.push({q,a,show:false});save('cards',cards);$('question').value='';$('answer').value='';renderCards()};
+let duration=25*60,left=duration,interval=null;
+function displayTime(){$('clock').textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0')}
+$('minutes').onchange=()=>{if(!interval){duration=Number($('minutes').value)*60;left=duration;displayTime();$('timerMessage').textContent='Ready when you are!'}};
+$('startTimer').onclick=()=>{
+ if(interval){clearInterval(interval);interval=null;$('startTimer').textContent='Resume';return}
+ $('startTimer').textContent='Pause';$('timerMessage').textContent='Focus time — you can do it!';
+ interval=setInterval(()=>{left--;displayTime();if(left<=0){clearInterval(interval);interval=null;$('startTimer').textContent='Start';$('timerMessage').textContent='Session complete! Take a short break 🎉';alert('Focus session complete! Great job!')}},1000);
+};
+$('resetTimer').onclick=()=>{clearInterval(interval);interval=null;duration=Number($('minutes').value)*60;left=duration;displayTime();$('startTimer').textContent='Start';$('timerMessage').textContent='Timer reset.'};
+$('themeButton').onclick=()=>{document.body.classList.toggle('dark');save('dark',document.body.classList.contains('dark'))};
+if(read('dark',false))document.body.classList.add('dark');
+$('reloadGame').onclick=()=>$('game').src='https://eaglercraft.com/play?version=26.2';
+$('fullGame').onclick=async()=>{try{await $('game').requestFullscreen()}catch{alert('Fullscreen is not available. Try opening the game in a new tab.')}};
+
+// Graduation-hat Easter egg: click five times to unlock the Secret Room.
+let hatClicks=0,hatReset;
+$('hat').addEventListener('click',()=>{
+ hatClicks++;clearTimeout(hatReset);hatReset=setTimeout(()=>hatClicks=0,2500);
+ if(hatClicks>=5){hatClicks=0;showPage('secret')}
+});
+renderTasks();renderCards();displayTime();
+</script>
+</body>
+</html>
