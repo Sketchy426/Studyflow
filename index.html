@@ -1340,7 +1340,7 @@ function parseGrades(text){
     else if(k==='item'){
       // Only a real assignment row: the next line is its due date, its score, or "—".
       const next=L[i+1]||'';if(!/^Due/i.test(next)&&!NUM.test(next)&&!/^[—–-]$/.test(next))continue;
-      const it={title:l.replace(/(assignment|test-quiz|discussion|assessment)$/,'').trim(),cat,due:'',score:null,total:null};
+      const it={title:l.replace(/(assignment|test-quiz|discussion|assessment)$/,'').trim(),cat,due:'',score:null,total:null,submitted:false};
       for(let j=i+1;j<Math.min(L.length,i+6);j++){
         const x=L[j];if(lineKind(x))break;
         if(/^Due/i.test(x)){it.due=usDate(x);continue}
@@ -1350,6 +1350,8 @@ function parseGrades(text){
         m=/^\/\s*(\d+(?:\.\d+)?)$/.exec(L[j+1]||'');
         if(NUM.test(x)&&m){it.score=+x;it.total=+m[1];break}
       }
+      // "This student has completed assignment submission" / "has made a submission": turned in, even if not graded yet.
+      for(let j=i+1;j<L.length&&!lineKind(L[j]);j++)if(/has (completed|made) (an |a )?(assignment )?submission/i.test(L[j]))it.submitted=true;
       if(it.title)needPeriod().items.push(it);
     }
   }
@@ -1382,8 +1384,9 @@ function importGrades(text){
     const d0=iso(today);
     p.items.forEach(x=>{
       const key=low(x.title).trim(),bk=classes.find(z=>z.source==='schoology'),t=tasks.find(y=>low(y.title).trim()===key&&(+y.classId===c.id||(bk&&+y.classId===bk.id&&byTitle(y.title)===c)));
-      if(t){if(x.score!=null&&!t.done){t.done=true;n.done++}return}
-      if(x.score==null&&x.due&&x.due>=d0){const ty=taskType(x.title);
+      const finished=x.score!=null||x.submitted;
+      if(t){if(finished&&!t.done){t.done=true;n.done++}return}
+      if(x.score==null&&!x.submitted&&x.due&&x.due>=d0){const ty=taskType(x.title);
         tasks.push({id:newId(taskIds),title:x.title,classId:c.id,type:ty!=='Assignment'?ty:catType(x.cat)==='Homework'?'Homework':'Assignment',due:x.due,points:'',priority:'Medium',done:false,source:'schoology',sgGrades:true});n.tasks++}
     });
   });
@@ -1411,7 +1414,7 @@ $('#sgImport').onclick=()=>{
   let r;try{r=importGrades(txt)}catch(e){r={error:'Something went wrong while reading that text. Nothing was changed.'}}
   st.classList.toggle('error',!!r.error);
   if(r.error){st.textContent=r.error;return}
-  const {n}=r,msg=`Imported ${n.scores} score${n.scores===1?'':'s'} from ${n.courses} course${n.courses===1?'':'s'}${n.periods.size?' ('+[...n.periods].join(', ')+')':''}${n.classes?`. Added ${n.classes} class${n.classes===1?'':'es'}`:''}${n.tasks?`. ${n.tasks} upcoming assignment${n.tasks===1?'':'s'} added to the calendar`:''}${n.done?`. ${n.done} graded assignment${n.done===1?'':'s'} marked done`:''}.`;
+  const {n}=r,msg=`Imported ${n.scores} score${n.scores===1?'':'s'} from ${n.courses} course${n.courses===1?'':'s'}${n.periods.size?' ('+[...n.periods].join(', ')+')':''}${n.classes?`. Added ${n.classes} class${n.classes===1?'':'es'}`:''}${n.tasks?`. ${n.tasks} upcoming assignment${n.tasks===1?'':'s'} added to the calendar`:''}${n.done?`. ${n.done} finished assignment${n.done===1?'':'s'} (graded or turned in) marked done`:''}.`;
   st.textContent=msg;$('#sgText').value='';gradesUi();toast(msg);
 };
 
