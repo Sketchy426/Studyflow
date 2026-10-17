@@ -23,12 +23,14 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | **Schoology import** from the personal calendar feed, on every page load, through the built-in relay `api/schoology.mjs` | Built and the relay is live; **not yet tested with a real Schoology feed link** |
 | Schoology `.ics` file import (one-time, no relay needed) | Done |
 | Easier Schoology setup: step-by-step guide, Paste button, connects as soon as a valid feed link is pasted (or Enter), explains a wrong link (e.g. the calendar page address), relay field under "Advanced" | Done (tested with a mocked relay) |
+| **Schoology grades import**: paste the Grades page (Grades → Import from Schoology). Imports the current grading period's scores and category weights, creates or matches classes by course name, and averages by points per category like Schoology does. Calendar-feed assignments whose title is on a course's Grades page are filed into that course | Done; averages match Schoology exactly for 3 real courses (Algebra 95.72, Science 91.18, Chinese 96) |
+| Calendar shows assignment names as colored chips (homework, quiz, test, project), finished work faded, and a list for the clicked day; on phones the chips become colored bars and the page no longer runs off the right edge. Grade import also adds upcoming ungraded assignments to the calendar and ticks off graded ones (the feed adopts them, no duplicates) | Done (tested with mocked data) |
 | Installable app (PWA): `manifest.webmanifest`, offline service worker `sw.js`, icons in `icons/`, "Install the app" card in Settings | Done locally; not yet tested on a real phone or with Google sign-in inside the installed app |
 
 ## To do
 
 1. **Finish connecting Schoology.** In Schoology open **Calendar → Export** and copy the `webcal://…/calendar/feed/ical/…/ical.ics` link. The calendar page address (`…/calendar/<number>/<month>`) is not the export link. In StudyFlow go to **Settings → School connections → Schoology**, paste the link (or press **Paste**); it connects by itself. Keep the link private.
-2. **Check Schoology class matching** after the first real sync. An assignment goes into the class whose name appears in the event text; otherwise it goes into a "Schoology" class. If many land in "Schoology", look at one event from the downloaded `.ics` file (with personal details removed) and adjust `classFor()` in `index.html`.
+2. **Check Schoology class matching** after the first real sync. Importing grades first files feed assignments by title; anything left in the "Schoology" class didn't match. An assignment goes into the class whose name appears in the event text; otherwise it goes into a "Schoology" class. If many land in "Schoology", look at one event from the downloaded `.ics` file (with personal details removed) and adjust `classFor()` in `index.html`.
 3. If Schoology **Export is turned off** at the school, use **Import .ics file** instead, or ask the school.
 4. Google Classroom hardening (follow-ups from the review in `logs/2026-10-10_SCHOOL_SYNC_PLAN.md`):
    - Wrap `client.requestAccessToken` so a synchronous throw clears the pending sign-in.
