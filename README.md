@@ -7,7 +7,7 @@ A study planner for students: classes, assignments, calendar, grades, GPA, flash
 
 The two sites keep separate saved data, because browser storage belongs to one web address. To move data between them, use **Settings → Backup**, then **Restore** on the other site.
 
-## Status (last updated 2026-10-14)
+## Status (last updated 2026-10-17)
 
 | Area | State |
 |---|---|
@@ -22,10 +22,12 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | **Google Classroom sync** (classes, assignments, due dates, returned grades; read-only; token in sessionStorage only) | Done, and the user reports it works |
 | **Schoology import** from the personal calendar feed, on every page load, through the built-in relay `api/schoology.mjs` | Built and the relay is live; **not yet tested with a real Schoology feed link** |
 | Schoology `.ics` file import (one-time, no relay needed) | Done |
+| Easier Schoology setup: step-by-step guide, Paste button, connects as soon as a valid feed link is pasted (or Enter), explains a wrong link (e.g. the calendar page address), relay field under "Advanced" | Done (tested with a mocked relay) |
+| Installable app (PWA): `manifest.webmanifest`, offline service worker `sw.js`, icons in `icons/`, "Install the app" card in Settings | Done locally; not yet tested on a real phone or with Google sign-in inside the installed app |
 
 ## To do
 
-1. **Finish connecting Schoology.** In Schoology open **Calendar → Export** and copy the `webcal://…/calendar/feed/ical/…/ical.ics` link. The calendar page address (`…/calendar/<number>/<month>`) is not the export link. In StudyFlow go to **Settings → School connections → Schoology**, paste the link, leave **Relay address** blank, and press **Connect Schoology**. Keep the link private.
+1. **Finish connecting Schoology.** In Schoology open **Calendar → Export** and copy the `webcal://…/calendar/feed/ical/…/ical.ics` link. The calendar page address (`…/calendar/<number>/<month>`) is not the export link. In StudyFlow go to **Settings → School connections → Schoology**, paste the link (or press **Paste**); it connects by itself. Keep the link private.
 2. **Check Schoology class matching** after the first real sync. An assignment goes into the class whose name appears in the event text; otherwise it goes into a "Schoology" class. If many land in "Schoology", look at one event from the downloaded `.ics` file (with personal details removed) and adjust `classFor()` in `index.html`.
 3. If Schoology **Export is turned off** at the school, use **Import .ics file** instead, or ask the school.
 4. Google Classroom hardening (follow-ups from the review in `logs/2026-10-10_SCHOOL_SYNC_PLAN.md`):
@@ -41,6 +43,7 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | Path | What it is |
 |---|---|
 | `index.html` | **The app. Edit this file.** All features are inline scripts in this one file. |
+| `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name and icons, and the service worker that lets it open offline. Bump `VERSION` in `sw.js` when the list of app files changes. |
 | `api/schoology.mjs` | Vercel Function: the Schoology relay at `/api/schoology`. It only fetches Schoology calendar feed links and only answers the two StudyFlow sites. |
 | `worker/schoology-relay.js` | The same relay as a Cloudflare Worker, for anyone hosting StudyFlow somewhere without functions. |
 | `old.html` | The original StudyFlow page, kept for reference. |
