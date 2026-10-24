@@ -1446,7 +1446,7 @@ async function apiSync(manual){
   }finally{apiBusy=false;apiUi()}
 }
 async function apiConnect(){
-  const k=$('#saKey').value.trim(),s=$('#saSecret').value.trim();
+  const k=$('#saKey').value.replace(/\s+/g,''),s=$('#saSecret').value.replace(/\s+/g,'');
   if(!k||!s){apiStatus={text:'Paste both the Consumer Key and the Consumer Secret.',error:true};apiUi();return}
   apiBusy=true;apiStatus={text:'Checking your key with Schoology…',error:false};apiUi();
   try{

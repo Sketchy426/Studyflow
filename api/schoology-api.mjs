@@ -211,8 +211,8 @@ async function handle(request) {
     const uid = await signedInUser(request);
     let body; try { body = await request.json(); } catch (e) { throw new Fail(400, 'Bad request'); }
     if (body && body.action === 'connect') {
-      const k = String(body.key || '').trim(), s = String(body.secret || '').trim();
-      if (!/^[\w-]{8,100}$/.test(k) || !/^[\w-]{8,100}$/.test(s)) throw new Fail(400, 'Paste both the Consumer Key and the Consumer Secret from Schoology\'s API page.');
+      const k = String(body.key || '').replace(/\s+/g, ''), s = String(body.secret || '').replace(/\s+/g, '');
+      if (!/^[\x21-\x7e]{6,200}$/.test(k) || !/^[\x21-\x7e]{6,200}$/.test(s)) throw new Fail(400, 'Paste both the Consumer Key and the Consumer Secret from Schoology\'s API page.');
       const user = await me({ k, s });
       return json({ token: seal({ k, s }, uid), name: user.name }, 200, h);
     }
