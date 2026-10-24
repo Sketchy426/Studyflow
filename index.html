@@ -724,12 +724,19 @@ function draw(){
   $('#wdWins').textContent='Won: '+(st.played?Math.round(st.wins/st.played*100):0)+'%';
   $('#wdStreak').textContent='Streak: '+st.streak+(st.best?` (best ${st.best})`:'');
 }
+// Every word the real game accepts as a guess (wordle-words.txt), fetched the first time Enter is pressed.
+// If it can't load (offline before it was ever saved), any 5 letters are allowed so the game still works.
+let dict=null;
+const getDict=()=>dict||(dict=fetch('wordle-words.txt').then(r=>r.ok?r.text():Promise.reject()).then(t=>new Set(t.split(/\s+/))).catch(()=>{dict=null;return null}));
+let checking=false;
 function shake(){const row=$('#wdRow'+W.rows.length);if(!row)return;row.classList.remove('shake');void row.offsetWidth;row.classList.add('shake')}
-function press(k){
-  if(W.over)return;
+async function press(k){
+  if(W.over||checking)return;
   if(k==='back'){W.cur=W.cur.slice(0,-1);draw();return}
   if(k==='enter'){
     if(W.cur.length<5){$('#wdMsg').textContent='Not enough letters.';shake();return}
+    checking=true;const words=await getDict();checking=false;
+    if(words&&!words.has(W.cur)){$('#wdMsg').textContent='Not in word list.';shake();return}
     const res=score(W.cur,W.answer);W.rows.push({word:W.cur,res});
     [...W.cur].forEach((c,i)=>{const rank={g:3,y:2,x:1},now=W.keys[c];if(!now||rank[res[i]]>rank[now])W.keys[c]=res[i]});
     const won=W.cur===W.answer;W.cur='';

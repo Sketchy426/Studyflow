@@ -1,8 +1,8 @@
 // StudyFlow service worker: lets the installed app open offline.
 // Pages load from the network first so updates show right away; the saved copy is used only when offline.
 // Bump VERSION when the list of app files changes.
-const VERSION = 'studyflow-v1';
-const APP_FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
+const VERSION = 'studyflow-v2';
+const APP_FILES = ['./', 'index.html', 'manifest.webmanifest', 'wordle-words.txt', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(APP_FILES)).then(() => self.skipWaiting()));
