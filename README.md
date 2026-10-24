@@ -21,6 +21,7 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | Graduation-hat logo goes back to the Dashboard | Done |
 | **Google Classroom sync** (classes, assignments, due dates, returned grades; read-only; token in sessionStorage only) | Done, and the user reports it works |
 | **Schoology import** from the personal calendar feed, on every page load, through the built-in relay `api/schoology.mjs` | Built and the relay is live; **not yet tested with a real Schoology feed link** |
+| **Schoology API sync** (Settings → Schoology → Automatic sync): the student pastes their personal Consumer Key/Secret from `<school>.schoology.com/api` once; `api/schoology-api.mjs` checks it and returns it sealed (AES-256-GCM with `SCHOOLOGY_TOKEN_KEY`, bound to the Firebase uid). Syncs classes, assignments, due dates, grades, category weights and turned-in status on open (at most every 15 min) through the same `importCourses()` as the grade paste. Needs Google sign-in. GET-only, stores and logs nothing | Built and tested with mocked Google keys and a mocked Schoology API; **needs `SCHOOLOGY_TOKEN_KEY` in Vercel**, not yet tested with a real key |
 | Schoology `.ics` file import (one-time, no relay needed) | Done |
 | Easier Schoology setup: step-by-step guide, Paste button, connects as soon as a valid feed link is pasted (or Enter), explains a wrong link (e.g. the calendar page address), relay field under "Advanced" | Done (tested with a mocked relay) |
 | **Schoology grades import**: paste the Grades page (Grades → Import from Schoology). Imports the current grading period's scores and category weights, creates or matches classes by course name, and averages by points per category like Schoology does. Calendar-feed assignments whose title is on a course's Grades page are filed into that course | Done; averages match Schoology exactly for 3 real courses (Algebra 95.72, Science 91.18, Chinese 96) |
@@ -49,6 +50,7 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | `index.html` | **The app. Edit this file.** All features are inline scripts in this one file. |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name and icons, and the service worker that lets it open offline. Bump `VERSION` in `sw.js` when the list of app files changes. |
 | `api/schoology.mjs` | Vercel Function: the Schoology relay at `/api/schoology`. It only fetches Schoology calendar feed links and only answers the two StudyFlow sites. |
+| `api/schoology-api.mjs` | Vercel Function at `/api/schoology-api`: checks the StudyFlow (Firebase) sign-in, seals the student's Schoology API key, and reads their classes, assignments and grades (GET only). Needs the Vercel environment variable `SCHOOLOGY_TOKEN_KEY` (32 random bytes, base64). |
 | `worker/schoology-relay.js` | The same relay as a Cloudflare Worker, for anyone hosting StudyFlow somewhere without functions. |
 | `old.html` | The original StudyFlow page, kept for reference. |
 | `template/index.html` | Redirect so old `/template/` links still work. Don't edit. |
@@ -56,7 +58,7 @@ The two sites keep separate saved data, because browser storage belongs to one w
 
 ### Where data is saved (browser localStorage keys)
 
-`studyflowData` (classes, tasks, sessions, name), `studyflowColors`, `studyflowFlashcards`, `studyflowFocus`, `studyflowFocusEnabled`, `studyflowSecretEnabled`, `studyflowGames`, `studyflowWordle`, `studyflowTyping`, `studyflowGpaScale`, `studyflowLastBackup`, `studyflowClassroom` (client ID and connection state), `studyflowSchoology` (feed link and connection state). The Google access token is in sessionStorage (`studyflowGcToken`) and is never saved permanently.
+`studyflowData` (classes, tasks, sessions, name), `studyflowColors`, `studyflowFlashcards`, `studyflowFocus`, `studyflowFocusEnabled`, `studyflowSecretEnabled`, `studyflowGames`, `studyflowWordle`, `studyflowTyping`, `studyflowGpaScale`, `studyflowLastBackup`, `studyflowClassroom` (client ID and connection state), `studyflowSchoology` (feed link and connection state), `studyflowSchoologyApi` (the sealed Schoology API token; left out of backups). The Google access token is in sessionStorage (`studyflowGcToken`) and is never saved permanently.
 
 ### If the allowed site addresses change
 
@@ -64,10 +66,10 @@ If the Vercel address changes, update `ALLOWED_ORIGINS` in `api/schoology.mjs` (
 
 ## Rules this project keeps
 
-- StudyFlow never asks for a school password. Google sign-in happens on Google's own page; Schoology uses only the private calendar feed link.
+- StudyFlow never asks for a school password. Google sign-in happens on Google's own page; Schoology uses the private calendar feed link or the student's own API key, which is sealed on the server right away and never stored readable.
 - School data is read-only: StudyFlow never turns in, edits or deletes anything in Classroom or Schoology.
 - No proxies or tools to get around the school's web filter (Blocksi), and no self-hosted copies of copyrighted games.
-- Treat the Schoology feed link like a password; never commit it or paste it in issues.
+- Treat the Schoology feed link and API key/secret like a password; never commit them, paste them in chat or put them in issues.
 
 ## Resume prompt
 
