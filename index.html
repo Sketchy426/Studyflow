@@ -271,7 +271,22 @@ function normalize(){classes.forEach(c=>{c.grades=Array.isArray(c.grades)?c.grad
   c.grades.forEach(g=>{if(!g.id)g.id=++gid;if(!g.type)g.type=guessType(g.title||'')})})}
 function saveData(){store.set(DKEY,JSON.stringify({v:1,classes,tasks,sessions,displayName:$('#displayName').value.trim()}))}
 const baseRender=render;
-render=function(){normalize();baseRender();renderDueAlert();renderCalc();renderGpa();saveData()};
+// The made-up starter work is removed once anything has come in from a school account (Classroom or Schoology).
+// Only items still exactly as they started go; anything the student changed or added to stays.
+const SAMPLE={classes:{1:'Mathematics|Period 1',2:'English|Period 2',3:'Biology|Period 3',4:'History|Period 4',5:'Chemistry|Period 5',6:'Spanish|Period 6'},
+  grades:{1:'Chapter quiz|88',2:'Essay|92',3:'Lab report|85'},
+  tasks:{1:'Algebra practice',2:'English reading response',3:'Biology chapter test',4:'History project outline',5:'Spanish vocabulary review'},
+  sessions:{1:'Review algebra notes',2:'Prepare biology flashcards'}};
+function dropSamples(){
+  if(!(tasks.some(t=>t.source)||classes.some(c=>c.source||c.sgCourse||c.gcId)))return;
+  tasks=tasks.filter(t=>t.source||SAMPLE.tasks[t.id]!==t.title);
+  sessions=sessions.filter(x=>SAMPLE.sessions[x.id]!==x.title);
+  const isSample=c=>SAMPLE.classes[c.id]===c.name+'|'+c.teacher;
+  classes.forEach(c=>{if(isSample(c)&&SAMPLE.grades[c.id])c.grades=(c.grades||[]).filter(g=>g.source||`${g.title}|${g.score}`!==SAMPLE.grades[c.id]||+g.total!==100)});
+  const deckCls=window.sfDropSampleDecks?.();if(!deckCls)return;
+  classes=classes.filter(c=>!(isSample(c)&&!c.source&&!c.sgCourse&&!c.gcId&&!(c.grades||[]).length&&!tasks.some(t=>+t.classId===c.id)&&!deckCls.has(c.id)));
+}
+render=function(){dropSamples();normalize();baseRender();renderDueAlert();renderCalc();renderGpa();saveData()};
 const baseSessions=renderSessions;
 renderSessions=function(){baseSessions();saveData()};
 $('#saveSettings').addEventListener('click',saveData);
@@ -409,6 +424,13 @@ if(!fc||!Array.isArray(fc.decks)||!Array.isArray(fc.cards)){
   ].map(([deckId,q,a],i)=>({id:i+1,deckId,q,a,last:null}))};
 }
 const saveFc=()=>store(FKEY,fc);
+// Called by dropSamples(): removes the two starter decks if they are untouched; returns the classes the remaining decks use.
+const SAMPLE_DECKS={1:['Cell parts',3,'Mitochondria|Ribosome|Nucleus|Cell membrane|Chloroplast'],2:['Spanish vocabulary',6,'la biblioteca|el cuaderno|la tarea|el lápiz|aprender']};
+window.sfDropSampleDecks=()=>{
+  const keep=fc.decks.filter(d=>{const s=SAMPLE_DECKS[d.id];return !s||d.name!==s[0]||+d.classId!==s[1]||deckCards(d.id).map(c=>c.q).join('|')!==s[2]});
+  if(keep.length<fc.decks.length){const gone=new Set(fc.decks.filter(d=>!keep.includes(d)).map(d=>d.id));fc.decks=keep;fc.cards=fc.cards.filter(c=>!gone.has(c.deckId));saveFc();if(typeof renderFlash==='function')renderFlash()}
+  return new Set(fc.decks.map(d=>Number(d.classId)));
+};
 let deckSel=fc.decks[0]?.id??null,S=null;
 const deckCards=id=>fc.cards.filter(c=>c.deckId===id);
 
