@@ -307,7 +307,10 @@ function dropSamples(){
   const deckCls=window.sfDropSampleDecks?.();if(!deckCls)return;
   classes=classes.filter(c=>!(isSample(c)&&!c.source&&!c.sgCourse&&!c.gcId&&!(c.grades||[]).length&&!tasks.some(t=>+t.classId===c.id)&&!deckCls.has(c.id)));
 }
-render=function(){dropSamples();normalize();baseRender();renderDueAlert();renderCalc();renderGpa();saveData()};
+// Unfinished homework and assignments due today or tomorrow become High priority, once per due date,
+// so a priority the student changes back by hand stays as they set it.
+function autoPriority(){const soon=[iso(today),plus(1)];tasks.forEach(t=>{if(!t.done&&(t.type==='Homework'||t.type==='Assignment')&&soon.includes(t.due)&&t.autoHigh!==t.due){t.autoHigh=t.due;t.priority='High'}})}
+render=function(){dropSamples();normalize();autoPriority();baseRender();renderDueAlert();renderCalc();renderGpa();saveData()};
 const baseSessions=renderSessions;
 renderSessions=function(){baseSessions();saveData()};
 $('#saveSettings').addEventListener('click',saveData);
