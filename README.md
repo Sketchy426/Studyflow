@@ -17,7 +17,7 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | Due-soon alert on the dashboard | Done |
 | Flashcards, focus timer (on/off in Settings), color editing | Done |
 | Save everything, Backup / Restore / Reset in Settings | Done |
-| Secret Room (hidden: click the "Features" heading 5 times, then turn it on in Settings) with Cookie Clicker, Math Sprint, Wordle, Typing Speed | Done |
+| Secret Room (hidden: click the "Features" heading 5 times, then turn it on in Settings) with Cookie Clicker, Wordle, Typing Speed | Done |
 | Graduation-hat logo goes back to the Dashboard | Done |
 | **Google Classroom sync** (classes, assignments, due dates, returned grades; read-only; token in sessionStorage only) | Done, and the user reports it works |
 | **Schoology import** from the personal calendar feed, on every page load, through the built-in relay `api/schoology.mjs` | Built and the relay is live; **not yet tested with a real Schoology feed link** |
