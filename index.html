@@ -111,6 +111,7 @@ h1{letter-spacing:-1.1px}
 .upgrade{width:100%;text-align:left;color:inherit;font:inherit;padding:11px 12px}
 .upgrade:disabled{opacity:.5;cursor:default}
 .upgrade .up-icon{font-size:22px;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:#e8f2ff;flex:none}
+.up-icon svg{width:32px;height:32px;display:block}
 .upgrade h4{margin:0}.upgrade p{margin:2px 0 0}
 .game-stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
 @media(max-width:700px){.clicker{grid-template-columns:1fr}.big-book{width:140px;height:140px;font-size:64px}}
@@ -629,22 +630,24 @@ $$('[data-game]').forEach(b=>b.onclick=()=>{
 });
 
 /* ---------- Study Clicker ---------- */
+// Upgrade pictures: small cartoon drawings with a dark outline (the cookie itself stays an emoji).
+const art=d=>`<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="#3b2b20" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">${d}</svg>`;
 const UPG=[
-  {id:'cursor',icon:'👆',name:'Cursor',desc:'+1 cookie per click',cost:15,click:1},
-  {id:'grandma',icon:'👵',name:'Grandma',desc:'+1 cookie per second',cost:50,rate:1},
-  {id:'oven',icon:'🔥',name:'Oven',desc:'+4 cookies per second',cost:250,rate:4},
-  {id:'pin',icon:'🥖',name:'Rolling Pin',desc:'+5 cookies per click',cost:600,click:5},
-  {id:'farm',icon:'🌾',name:'Farm',desc:'+15 cookies per second',cost:1200,rate:15},
-  {id:'bakery',icon:'🏠',name:'Bakery',desc:'+60 cookies per second',cost:6000,rate:60},
-  {id:'mitt',icon:'🧤',name:'Golden Mitt',desc:'+50 cookies per click',cost:15000,click:50},
-  {id:'factory',icon:'🏭',name:'Factory',desc:'+250 cookies per second',cost:30000,rate:250},
-  {id:'mine',icon:'⛏️',name:'Cookie Mine',desc:'+1,000 cookies per second',cost:150000,rate:1000},
-  {id:'bank',icon:'🏦',name:'Bank',desc:'+4,000 cookies per second',cost:750000,rate:4000},
-  {id:'temple',icon:'🛕',name:'Temple',desc:'+16,000 cookies per second',cost:4000000,rate:16000},
-  {id:'wizard',icon:'🧙',name:'Wizard Tower',desc:'+65,000 cookies per second',cost:20000000,rate:65000},
-  {id:'rocket',icon:'🚀',name:'Rocket',desc:'+260,000 cookies per second',cost:100000000,rate:260000},
-  {id:'portal',icon:'🌀',name:'Portal',desc:'+1M cookies per second',cost:500000000,rate:1000000},
-  {id:'timemachine',icon:'⏳',name:'Time Machine',desc:'+5M cookies per second',cost:3000000000,rate:5000000}];
+  {id:'cursor',icon:art('<path d="M14 7v29l7-7 5 11 5-2-5-11h10z" fill="#fff"/><path d="M36 9l4-3M38 15h5M33 5l1-4" />'),name:'Cursor',desc:'+1 cookie per click',cost:15,click:1},
+  {id:'grandma',icon:art('<circle cx="24" cy="10" r="5" fill="#cfd3de"/><circle cx="24" cy="27" r="13" fill="#f8d5b5"/><path d="M11 26c0-12 26-12 26 0-4-6-22-6-26 0z" fill="#cfd3de"/><circle cx="15" cy="32" r="2" fill="#f4a6a0" stroke="none"/><circle cx="33" cy="32" r="2" fill="#f4a6a0" stroke="none"/><circle cx="19" cy="27" r="3.5" fill="#fff"/><circle cx="29" cy="27" r="3.5" fill="#fff"/><path d="M22.5 27h3"/><circle cx="19" cy="27" r="1" fill="#3b2b20" stroke="none"/><circle cx="29" cy="27" r="1" fill="#3b2b20" stroke="none"/><path d="M20 34q4 3 8 0"/>'),name:'Grandma',desc:'+1 cookie per second',cost:50,rate:1},
+  {id:'oven',icon:art('<rect x="8" y="9" width="32" height="30" rx="4" fill="#c9ced8"/><path d="M8 17h32"/><circle cx="14" cy="13" r="1.6" fill="#3b2b20" stroke="none"/><circle cx="20" cy="13" r="1.6" fill="#3b2b20" stroke="none"/><rect x="13" y="21" width="22" height="13" rx="3" fill="#ffb347"/><path d="M24 31c-4 0-5-3-3-6 0 2 2 2 2 0 0-2 2-3 2-3 1 2 3 3 3 5 0 2-2 4-4 4z" fill="#e5534b"/><path d="M12 39v3M36 39v3"/>'),name:'Oven',desc:'+4 cookies per second',cost:250,rate:4},
+  {id:'pin',icon:art('<g transform="rotate(-25 24 24)"><rect x="3" y="21" width="10" height="6" rx="3" fill="#c98f4f"/><rect x="35" y="21" width="10" height="6" rx="3" fill="#c98f4f"/><rect x="12" y="18" width="24" height="12" rx="6" fill="#f0c48a"/><path d="M17 22h4M26 26h4" stroke="#fff"/></g><circle cx="12" cy="38" r="1.5" fill="#fff"/><circle cx="18" cy="41" r="1.2" fill="#fff"/><circle cx="34" cy="10" r="1.2" fill="#fff"/>'),name:'Rolling Pin',desc:'+5 cookies per click',cost:600,click:5},
+  {id:'farm',icon:art('<path d="M7 22L24 9l17 13v18H7z" fill="#e5534b"/><path d="M5 23L24 7l19 16" /><rect x="21" y="15" width="6" height="5" fill="#fff"/><rect x="17" y="27" width="14" height="13" fill="#fff"/><path d="M17 27l14 13M31 27L17 40"/>'),name:'Farm',desc:'+15 cookies per second',cost:1200,rate:15},
+  {id:'bakery',icon:art('<rect x="9" y="19" width="30" height="21" fill="#fff3e0"/><path d="M7 12h34v7c0 2-3 3-4.25 1-1.25 2-4.25 2-5.5 0-1.25 2-4.25 2-5.5 0-1.25 2-4.25 2-5.5 0-1.25 2-4.25 2-5.5 0C10 22 7 21 7 19z" fill="#f28b82"/><path d="M15.5 12v8M24 12v8M32.5 12v8" stroke="#fff" stroke-width="3"/><path d="M7 12h34"/><rect x="20" y="27" width="8" height="13" rx="1" fill="#c98f4f"/><rect x="12" y="25" width="6" height="6" rx="1" fill="#bfe3ff"/><rect x="30" y="25" width="6" height="6" rx="1" fill="#bfe3ff"/>'),name:'Bakery',desc:'+60 cookies per second',cost:6000,rate:60},
+  {id:'mitt',icon:art('<path d="M15 37V20c0-9 13-10 14-2l1 6 3-6c2-4 7-2 5 3l-5 11v5z" fill="#f5c542"/><rect x="13" y="35" width="22" height="7" rx="2" fill="#e0a82e"/><path d="M21 23v6" stroke="#fff6c9"/><path d="M40 6l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM8 9l.8 2 2 .8-2 .8L8 15l-.8-2.4-2-.8 2-.8z" fill="#fff6c9" stroke-width="1.6"/>'),name:'Golden Mitt',desc:'+50 cookies per click',cost:15000,click:50},
+  {id:'factory',icon:art('<circle cx="37" cy="7" r="3" fill="#e6e9ef"/><circle cx="42" cy="4" r="2.2" fill="#e6e9ef"/><path d="M6 40V22l9 5v-5l9 5v-5l9 5V12h8v28z" fill="#a7b4c8"/><rect x="10" y="31" width="4" height="4" fill="#ffd36b"/><rect x="19" y="31" width="4" height="4" fill="#ffd36b"/><rect x="28" y="31" width="4" height="4" fill="#ffd36b"/><path d="M5 40h38"/>'),name:'Factory',desc:'+250 cookies per second',cost:30000,rate:250},
+  {id:'mine',icon:art('<path d="M15 41L33 12" stroke-width="6.5"/><path d="M15 41L33 12" stroke="#c98f4f" stroke-width="3.2"/><path d="M11 16c8-9 21-10 30-4-9-2-19 0-27 7z" fill="#b8c2cc"/><circle cx="9" cy="38" r="3.5" fill="#d9a066"/><circle cx="8" cy="37" r=".7" fill="#3b2b20" stroke="none"/><circle cx="10.5" cy="39" r=".7" fill="#3b2b20" stroke="none"/>'),name:'Cookie Mine',desc:'+1,000 cookies per second',cost:150000,rate:1000},
+  {id:'bank',icon:art('<path d="M6 18L24 7l18 11z" fill="#f5d26b"/><circle cx="24" cy="14" r="2.2" fill="#fff"/><rect x="8" y="18" width="32" height="3.5" fill="#fff"/><rect x="11" y="22" width="4" height="13" fill="#fff"/><rect x="19" y="22" width="4" height="13" fill="#fff"/><rect x="27" y="22" width="4" height="13" fill="#fff"/><rect x="35" y="22" width="2" height="13" fill="#fff" stroke="none"/><path d="M35 22v13h2"/><rect x="6" y="35" width="36" height="5" rx="1" fill="#f5d26b"/>'),name:'Bank',desc:'+4,000 cookies per second',cost:750000,rate:4000},
+  {id:'temple',icon:art('<path d="M24 8V3"/><circle cx="24" cy="3" r="1.4" fill="#f5c542"/><rect x="18" y="14" width="12" height="8" fill="#fbe3c8"/><path d="M11 16q8-2 13-8 5 6 13 8z" fill="#e5534b"/><rect x="14" y="28" width="20" height="12" fill="#fbe3c8"/><path d="M6 30q11-2 18-10 7 8 18 10z" fill="#e5534b"/><path d="M21 40v-5a3 3 0 0 1 6 0v5" fill="#c98f4f"/><path d="M11 40h26"/>'),name:'Temple',desc:'+16,000 cookies per second',cost:4000000,rate:16000},
+  {id:'wizard',icon:art('<rect x="16" y="19" width="16" height="21" fill="#b9a7e8"/><path d="M13 20L24 3l11 17z" fill="#6b5bd6"/><path d="M24 9l1 2 2 .4-1.5 1.4.4 2.2-1.9-1-1.9 1 .4-2.2L21 11.4l2-.4z" fill="#f5c542" stroke-width="1.2"/><path d="M21 31v-4a3 3 0 0 1 6 0v4z" fill="#ffd36b"/><path d="M16 36h5M27 24h5M18 25h0" stroke-width="1.8"/><path d="M14 40h20"/>'),name:'Wizard Tower',desc:'+65,000 cookies per second',cost:20000000,rate:65000},
+  {id:'rocket',icon:art('<path d="M20 34q4 11 8 0z" fill="#ffb347"/><path d="M19 26l-7 8 7-1zM29 26l7 8-7-1z" fill="#e5534b"/><path d="M24 4c8 7 8 21 5 29H19c-3-8-3-22 5-29z" fill="#f1f3f7"/><path d="M24 4c2.5 2 4.5 4.6 5.6 7.5H18.4C19.5 8.6 21.5 6 24 4z" fill="#e5534b"/><circle cx="24" cy="19" r="4" fill="#8ecdf5"/>'),name:'Rocket',desc:'+260,000 cookies per second',cost:100000000,rate:260000},
+  {id:'portal',icon:art('<ellipse cx="24" cy="24" rx="17" ry="18" fill="#b39dfb"/><path d="M24 24a2 2 0 1 1-2-2 5 5 0 0 1 5 5 8 8 0 0 1-8 8 11 11 0 0 1-11-11 14 14 0 0 1 14-14" stroke="#fff" stroke-width="2.6"/><circle cx="36" cy="10" r="1.3" fill="#fff" stroke="none"/><circle cx="12" cy="38" r="1" fill="#fff" stroke="none"/>'),name:'Portal',desc:'+1M cookies per second',cost:500000000,rate:1000000},
+  {id:'timemachine',icon:art('<path d="M15 10h18q0 9-7.5 14Q33 29 33 38H15q0-9 7.5-14Q15 19 15 10z" fill="#dff1ff"/><path d="M18.5 15h11q-1 4-5.5 7-4.5-3-5.5-7z" fill="#f5c542" stroke="none"/><path d="M17.5 37q6.5-8 13 0z" fill="#f5c542" stroke="none"/><path d="M24 23v12" stroke="#f5c542" stroke-width="1.5"/><path d="M15 10h18q0 9-7.5 14Q33 29 33 38H15q0-9 7.5-14Q15 19 15 10z"/><rect x="11" y="5" width="26" height="5" rx="2.5" fill="#c98f4f"/><rect x="11" y="38" width="26" height="5" rx="2.5" fill="#c98f4f"/>'),name:'Time Machine',desc:'+5M cookies per second',cost:3000000000,rate:5000000}];
 const C=G.clicker,owned=id=>C.owned[id]||0;
 const price=u=>Math.ceil(u.cost*Math.pow(1.15,owned(u.id)));
 const perClick=()=>1+UPG.reduce((s,u)=>s+(u.click||0)*owned(u.id),0);
