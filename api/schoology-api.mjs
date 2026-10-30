@@ -166,7 +166,7 @@ async function courses(cred) {
     for (const a of items) {
       const id = String(a.id), gr = scored.get(id), pid = periodOf.get(id) || String(a.grading_period || '');
       const due = day(a.due);
-      const it = { title: String(a.title || '').trim(), cat: catName.get(String((gr && gr.category_id) || a.grading_category || '')) || '', due, score: null, total: null, submitted: false };
+      const it = { title: String(a.title || '').trim(), url: String(a.web_url || '') || `https://app.schoology.com/assignment/${encodeURIComponent(id)}`, cat: catName.get(String((gr && gr.category_id) || a.grading_category || '')) || '', due, score: null, total: null, submitted: false };
       if (!it.title) continue;
       const exception = gr ? +gr.exception || 0 : 0;   // 1 excused, 2 incomplete, 3 missing
       if (gr && num(gr.grade) !== null && exception !== 1) { it.score = num(gr.grade); it.total = num(gr.max_points) ?? num(a.max_points); if (!(it.total > 0)) { it.score = null; it.total = null; } }
