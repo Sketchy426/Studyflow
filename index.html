@@ -353,7 +353,7 @@ function renderDueAlert(){
   const t0=iso(today),t1=plus(1),open=tasks.filter(t=>!t.done&&t.due);
   const over=open.filter(t=>t.due<t0).length,tod=open.filter(t=>t.due===t0).length,tom=open.filter(t=>t.due===t1).length;
   const parts=[over&&`<b class="over">${over} overdue</b>`,tod&&`<b>${tod} due today</b>`,tom&&`${tom} due tomorrow`].filter(Boolean);
-  $('#dueAlert').innerHTML=parts.length?`<div class="due-alert"><span class="due-ico" aria-hidden="true">⏰</span><div style="flex:1;min-width:0"><b>Heads up!</b> ${parts.join(' · ')}</div><button class="text-btn" data-goto="assignments">View →</button></div>`:'';
+  $('#dueAlert').innerHTML=parts.length?`<div class="due-alert"><div style="flex:1;min-width:0"><b>Heads up!</b> ${parts.join(' · ')}</div><button class="text-btn" data-goto="assignments">View →</button></div>`:'';
 }
 
 /* ---------- 4. Grade calculator ---------- */
