@@ -1229,6 +1229,15 @@ function merge(items){
     tasks.push({id:newId(taskIds),scId:x.uid,title:x.title,url:x.url,sgHome:home,classId:cls.id,type:taskType(x.title),due:x.due,points:'',priority:'Medium',done:false,source:'schoology'});
     n.tasks++;
   });
+  // Schoology assignments still without their own link (e.g. from the Grades page) take the link of the calendar
+  // assignment with the same name, ignoring case and punctuation; the due date decides between same-named ones.
+  const norm=t=>low(t).replace(/[^a-z0-9]+/g,' ').trim(),named=new Map();
+  items.forEach(x=>{if(!x.url)return;const k=norm(x.title);if(k)named.set(k,(named.get(k)||[]).concat(x))});
+  tasks.forEach(t=>{
+    if(t.source!=='schoology'||sgLink(t.url))return;
+    const c=named.get(norm(t.title));if(!c)return;
+    const pick=c.find(x=>x.due===t.due)||(c.length===1?c[0]:null);if(pick)t.url=pick.url;
+  });
   return n;
 }
 function apply(text,manual,label){
