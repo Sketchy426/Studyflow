@@ -1,0 +1,8 @@
+{
+  "name": "studyflow",
+  "private": true,
+  "description": "Dependencies for the Vercel Functions in api/. The app itself has no build step.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.4.0"
+  }
+}
