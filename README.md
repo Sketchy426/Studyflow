@@ -12,7 +12,7 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | Area | State |
 |---|---|
 | App at the site root (`index.html`) | Live on both sites |
-| Dashboard, My Classes, Assignments, Calendar, Study Planner | Done |
+| Dashboard, My Classes, Assignments, Calendar, Planner | Done |
 | Grade tracker: category weights, grade calculator (add/delete), GPA out of 4 (plus/minus or simple scale) | Done |
 | Due-soon alert on the dashboard | Done |
 | Flashcards, focus timer (on/off in Settings), color editing | Done |
