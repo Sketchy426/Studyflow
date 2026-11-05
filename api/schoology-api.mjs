@@ -127,6 +127,36 @@ const day = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); r
 const usDate = v => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(v || ''); if (!m) return ''; const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`; };
 const num = v => v === null || v === undefined || v === '' || isNaN(+v) ? null : +v;
 
+// An assignment's description as plain text (Schoology sends HTML), kept short because it is saved in the student's account.
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+function plainText(html) {
+  return String(html || '')
+    .replace(/<(style|script)\b[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<a\b[^>]*?href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a\s*>/gi, (m, url, label) => {
+      const t = label.replace(/<[^>]*>/g, '').trim();
+      return t && t !== url ? `${t} (${url})` : url;
+    })
+    .replace(/<(br|\/p|\/div|\/li|\/h[1-6])\b[^>]*>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => {
+      if (e[0] !== '#') return ENTITIES[e.toLowerCase()] ?? m;
+      const c = e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : +e.slice(1);
+      return c > 0 && c <= 0x10ffff ? String.fromCodePoint(c) : m;
+    })
+    .replace(/[ \t\u00a0]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 2000);
+}
+const webUrl = v => { try { const u = new URL(String(v || '')); return /^https?:$/.test(u.protocol) ? u.href : ''; } catch (e) { return ''; } };
+// The description, the assignment's page, and its attachments. Files need a Schoology sign-in, so they point at the assignment's page.
+function assignmentDetails(a) {
+  const att = a.attachments || {}, rows = (o, k) => (o && Array.isArray(o[k]) ? o[k] : []);
+  const isAssignment = !a.type || a.type === 'assignment';
+  const url = webUrl(a.web_url) || (isAssignment ? `https://app.schoology.com/assignment/${encodeURIComponent(a.id)}` : '');
+  const links = [...rows(att.links, 'link'), ...rows(att.videos, 'video')].map(l => ({ title: String(l.title || '').trim(), url: webUrl(l.url) }))
+    .concat(url ? rows(att.files, 'file').map(f => ({ title: String(f.title || f.filename || '').trim(), url })) : [])
+    .filter(l => l.url).slice(0, 10);
+  return { desc: plainText(a.description), url, links };
+}
+
 async function courses(cred) {
   const user = await me(cred);
   const sections = await list(cred, `/users/${user.id}/sections`, 'section');
@@ -142,7 +172,7 @@ async function courses(cred) {
   const today = new Date().toISOString().slice(0, 10);
   const built = await pool(sections, 3, async s => {
     const [assignments, grades] = await Promise.all([
-      list(cred, `/sections/${s.id}/assignments`, 'assignment'),
+      list(cred, `/sections/${s.id}/assignments?with_attachments=TRUE`, 'assignment'),
       get(cred, `/users/${user.id}/grades?section_id=${s.id}`),
     ]);
     const g = grades && Array.isArray(grades.section) ? (grades.section.find(x => String(x.section_id) === String(s.id)) || grades.section[0]) : null;
@@ -159,14 +189,14 @@ async function courses(cred) {
     let items = assignments.filter(a => a && a.id && a.published !== 0 && a.published !== '0');
     const known = new Set(items.map(a => String(a.id)));
     if ([...scored.keys()].some(id => !known.has(id))) {
-      const extra = await list(cred, `/sections/${s.id}/grade_items`, 'assignment').catch(() => []);
+      const extra = await list(cred, `/sections/${s.id}/grade_items?with_attachments=TRUE`, 'assignment').catch(() => []);
       items = items.concat(extra.filter(a => a && a.id && !known.has(String(a.id))));
     }
     const byPeriod = new Map();
     for (const a of items) {
       const id = String(a.id), gr = scored.get(id), pid = periodOf.get(id) || String(a.grading_period || '');
       const due = day(a.due);
-      const it = { title: String(a.title || '').trim(), cat: catName.get(String((gr && gr.category_id) || a.grading_category || '')) || '', due, score: null, total: null, submitted: false };
+      const it = { title: String(a.title || '').trim(), cat: catName.get(String((gr && gr.category_id) || a.grading_category || '')) || '', due, score: null, total: null, submitted: false, ...assignmentDetails(a) };
       if (!it.title) continue;
       const exception = gr ? +gr.exception || 0 : 0;   // 1 excused, 2 incomplete, 3 missing
       if (gr && num(gr.grade) !== null && exception !== 1) { it.score = num(gr.grade); it.total = num(gr.max_points) ?? num(a.max_points); if (!(it.total > 0)) { it.score = null; it.total = null; } }
