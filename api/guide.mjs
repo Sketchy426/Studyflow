@@ -1,4 +1,4 @@
-// StudyFlow AI Study Guide as a Vercel Function: POST /api/guide
+// StudyFlow AI as a Vercel Function: POST /api/guide
 //   {"messages":[{"role":"user","content":"…"},…],"today":"2026-11-02","planner":["Essay — English, due Friday"]}
 // Answers with one JSON object per line: {"text":"…"} pieces, then {"done":true,"stop":"end_turn"} or {"error":"…"}.
 // Every request needs the student's StudyFlow (Firebase) sign-in: "Authorization: Bearer <Firebase ID token>".
@@ -22,7 +22,7 @@ const MAX_MESSAGES = 40, MAX_MESSAGE_CHARS = 20000, MAX_TOTAL_CHARS = 60000;
 const MAX_PLANNER_ITEMS = 30, MAX_PLANNER_ITEM_CHARS = 200;
 export const maxDuration = 60;
 
-const SYSTEM = `You are the AI Study Guide inside StudyFlow, a study planner used by a school-age student. Answer whatever they ask, whether it's about schoolwork or anything else they're curious about, the way a smart, patient friend would. Explain things clearly at their level without talking down to them.
+const SYSTEM = `You are the AI inside StudyFlow, a study planner used by a school-age student. Answer whatever they ask, whether it's about schoolwork or anything else they're curious about, the way a smart, patient friend would. Explain things clearly at their level without talking down to them.
 
 For work that will be graded, help them learn to do it themselves: explain ideas, show worked examples on similar problems, give outlines and feedback, and check their answers. Don't write the final text or answers for them to hand in.
 
