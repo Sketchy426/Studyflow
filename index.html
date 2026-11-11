@@ -12,7 +12,7 @@ button.day{display:flex;flex-direction:column;align-items:stretch;gap:3px;text-a
 .chip.done{opacity:.45;text-decoration:line-through}
 :root{--k-hw:#6aa4f2;--k-quiz:#f0b44c;--k-test:#e26d8c;--k-project:#4fb07c}
 .k-hw{--k:var(--k-hw)}.k-quiz{--k:var(--k-quiz)}.k-test{--k:var(--k-test)}.k-project{--k:var(--k-project)}
-.chip{background:color-mix(in srgb,var(--k) 34%,#fff);color:color-mix(in srgb,var(--k) 55%,#000)}
+.chip{background:color-mix(in srgb,var(--k) 40%,#fff);color:color-mix(in srgb,var(--k) 50%,#000)}
 .chip-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none;background:var(--k)}
 .cal-key{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .cal-key input{width:18px;height:18px;padding:0;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #d3e1f3;cursor:pointer;background:none;-webkit-appearance:none;appearance:none;overflow:hidden}
@@ -221,7 +221,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none}
 .tag.priority-high,.tag.due-over{background:color-mix(in srgb,var(--blue) 82%,#000);color:#fff;font-weight:bold;box-shadow:none}
 .tag.priority-medium,.tag.due-soon{background:color-mix(in srgb,var(--blue) 26%,var(--card-solid));color:color-mix(in srgb,var(--blue) 75%,#000);font-weight:bold;box-shadow:none}
 .tag.priority-low{background:transparent;color:var(--accent-ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 45%,transparent)}
-.tag.kind{background:color-mix(in srgb,var(--k) 32%,var(--card-solid));color:color-mix(in srgb,var(--k) 55%,#000);box-shadow:none}
+.tag.kind{background:color-mix(in srgb,var(--k) 38%,var(--card-solid));color:color-mix(in srgb,var(--k) 50%,#000);box-shadow:none}
 [data-theme=night] .tag.priority-high,[data-theme=night] .tag.due-over{background:var(--blue);color:#10163a}
 [data-theme=night] .tag.priority-medium,[data-theme=night] .tag.due-soon{color:color-mix(in srgb,var(--blue) 35%,#fff)}
 [data-theme=night] .tag.kind{background:color-mix(in srgb,var(--k) 30%,var(--card-solid));color:color-mix(in srgb,var(--k) 35%,#fff)}
@@ -535,9 +535,9 @@ const fromHsl=(h,s,l)=>{h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=
   return '#'+[0,8,4].map(n=>Math.round((l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1)))*255).toString(16).padStart(2,'0')).join('')};
 const shades=()=>{const a=hex(getComputedStyle(document.documentElement).getPropertyValue('--blue').trim())||'#4f8fe8',[h,s0]=toHsl(a),s=Math.max(55,Math.min(80,s0));
 // Each kind sits at its own lightness (light to dark) and turns the hue a little. On the dark Night design the order flips,
-// so the test color is the brightest, and the hue turns are bigger because there is less room in lightness.
-if(document.documentElement.dataset.theme==='night')return {project:fromHsl(h+30,s,48),hw:a,quiz:fromHsl(h-40,s,72),test:fromHsl(h+45,s,82)};
-return {project:fromHsl(h+25,s,70),hw:a,quiz:fromHsl(h-20,s,45),test:fromHsl(h+12,s,32)}};
+// so the test color is the brightest.
+if(document.documentElement.dataset.theme==='night')return {project:fromHsl(h+70,s,52),hw:a,quiz:fromHsl(h-60,s,72),test:fromHsl(h+40,s,84)};
+return {project:fromHsl(h+70,s,68),hw:a,quiz:fromHsl(h-40,Math.min(90,s+10),47),test:fromHsl(h+30,Math.min(90,s+10),31)}};
 // Only colors the student changed are kept; the old built-in colors count as unchanged.
 let custom={};try{const saved=JSON.parse(store.get(KEY))||{};Object.keys(OLD).forEach(k=>{const v=hex(saved[k]);if(v&&v!==OLD[k])custom[k]=v})}catch(e){}
 const apply=()=>{const cc={...shades(),...custom};Object.entries(cc).forEach(([k,v])=>document.documentElement.style.setProperty('--k-'+k,v));
