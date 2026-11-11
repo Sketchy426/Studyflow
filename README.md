@@ -7,7 +7,7 @@ A study planner for students: classes, assignments, calendar, grades, GPA, flash
 
 The two sites keep separate saved data, because browser storage belongs to one web address. To move data between them, use **Settings → Backup**, then **Restore** on the other site.
 
-## Status (last updated 2026-10-17)
+## Status (last updated 2026-11-10)
 
 | Area | State |
 |---|---|
@@ -32,6 +32,7 @@ The two sites keep separate saved data, because browser storage belongs to one w
 | Assignments page shows only work due in the next 7 days by default (plus overdue unfinished work). The first filter lets the student choose today, 3 days, 7 days, 2 weeks, 30 days, "Choose my own…" (any number of days, saved as `studyflowDueDays`) or all dates; a "Show all dates" link switches to everything. The choice is saved as `studyflowDueFilter` | Done |
 | **Accounts (Sign in with Google)**: Firebase Auth + one Firestore doc per user (`users/<uid>`) holding every `studyflow*` item; changes sync 2 s after they happen and when the tab comes back into view; first sign-in on a device with its own work asks which copy to keep. Per-device state in `studyflowCloud` (kept out of backups) | On: Firebase project `studyflow-dca86` (Google sign-in, Firestore rules limit each user to `users/<own uid>`); tested with a mocked Firebase |
 | **AI Study Guide**: a real chat with Claude (`claude-opus-5-5`) that answers anything, through `api/guide.mjs`. Needs Google sign-in and an account listed in `GUIDE_ALLOWED_EMAILS`. It sees the conversation and the student's unfinished assignments. It helps with graded work but won't write it. If the AI can't be used (not signed in, not listed, not set up, offline), the page shows the old built-in guide with a note. The page looks and works like ChatGPT: full-height chat, a rounded message box that starts centered, Enter to send (Shift+Enter for a new line), a stop button, Copy under each answer and a New chat button. The chat isn't saved: reloading the page or pressing New chat starts a new one | Built and tested with a mocked Claude API and mocked sign-in; **needs `ANTHROPIC_API_KEY` and `GUIDE_ALLOWED_EMAILS` in Vercel**, not yet tested with the real AI |
+| **Free AI on this device** (AI Study Guide → "Free AI on this device", the default; switch to "Claude (online)" at the top of the page): runs Qwen3 1.7B in the browser with WebLLM 0.2.86 and WebGPU. Asks before a one-time download of about 1 GB, shows download progress, then answers offline. Questions never leave the device, no account or key needed, costs nothing. Small model, so it makes more mistakes than Claude. Needs WebGPU (Chrome or Edge on a computer); otherwise the page explains and shows the built-in guide. Choice saved as `studyflowGuideEngine` | Done (tested in headless Chrome on a Mac: download, answers, stop, the assignment list); not yet tried on a school Chromebook or a phone |
 | Installable app (PWA): `manifest.webmanifest`, offline service worker `sw.js`, icons in `icons/`, "Install the app" card in Settings | Done locally; not yet tested on a real phone or with Google sign-in inside the installed app |
 
 ## To do
