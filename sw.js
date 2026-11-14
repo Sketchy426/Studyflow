@@ -1,7 +1,7 @@
 // StudyFlow service worker: lets the installed app open offline.
 // Pages load from the network first so updates show right away; the saved copy is used only when offline.
 // Bump VERSION when the list of app files changes.
-const VERSION = 'studyflow-v2';
+const VERSION = 'studyflow-v3';
 const APP_FILES = ['./', 'index.html', 'manifest.webmanifest', 'wordle-words.txt', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -29,4 +29,13 @@ self.addEventListener('fetch', e => {
     if (res.ok && APP_FILES.some(p => url.pathname.endsWith(p.replace('./', '/')))) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
     return res;
   })));
+});
+
+// A tapped reminder brings StudyFlow to the front, or opens it.
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    const open = list.find(c => 'focus' in c);
+    return open ? open.focus() : self.clients.openWindow('./');
+  }));
 });
