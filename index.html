@@ -1082,7 +1082,7 @@ function apply(){box.checked=on;$('#secretToggleState').textContent=on?'On':'Off
 box.onchange=()=>{
   on=box.checked;try{localStorage.setItem(K,on?'on':'off')}catch(e){}
   if(!on&&$('#page-secret').classList.contains('active'))go('dashboard');
-  apply();toast(on?'Secret Room turned on.':'Secret Room turned off.');
+  apply();toast(on?'Games turned on.':'Games turned off.');
 };
 // The switch stays hidden until the Features heading is clicked 5 times quickly, and hides again when you leave Settings.
 let taps=0,tapTimer;
