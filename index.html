@@ -2041,7 +2041,7 @@ fillDecks();preview();window.__paste={pairsFrom};
 <script>
 /* ---------- Grade Tracker charts ---------- */
 (function(){
-const SERIES=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'],OTHER='#8a97a8';
+const SERIES=['#3b82d6','#e4704f','#1f9e8a','#c99212','#8a5fc9','#d6648f','#7a9a2e','#2b9bc4'],OTHER='#8a97a8';
 const colorOf=c=>{const i=classes.slice().sort((a,b)=>a.id-b.id).findIndex(x=>x.id===c.id);return i<SERIES.length?SERIES[i]:OTHER};
 const fmt1=v=>(Math.round(v*10)/10).toFixed(1);
 let tip=null;function showTip(fig,html,x,y){if(!tip){tip=document.createElement('div');tip.className='chart-tip';tip.setAttribute('role','status')}
