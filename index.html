@@ -857,7 +857,16 @@ const CIRC=2*Math.PI*52,baseTitle=document.title;
 let audio=null,log=load(LKEY,{});
 if(typeof log!=='object'||!log)log={};
 const modeLen=m=>m==='focus'?+$('#focusLen').value*60:m==='short'?300:900;
-function stopTick(){clearInterval(T.iv);T.iv=null}
+function stopTick(){clearInterval(T.iv);T.iv=null;letSleep()}
+/* Keep the screen on while the timer runs (Screen Wake Lock: Safari 16.4+, Chrome, Edge). The lock drops by itself when the
+   page is hidden, so it is asked for again when the page comes back. */
+let wake=null;
+const canWake='wakeLock' in navigator;
+async function keepAwake(){if(!canWake||!T.iv||wake||document.visibilityState!=='visible')return;try{const w=await navigator.wakeLock.request('screen');if(!T.iv){w.release();return}wake=w;w.addEventListener('release',()=>{if(wake===w)wake=null})}catch(e){wake=null}}
+function letSleep(){const w=wake;wake=null;try{if(w)w.release()}catch(e){}}
+const isIOSDevice=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const awakeNote=()=>canWake?' Your screen stays on until the timer ends or you pause it.':isIOSDevice()?' This browser can\'t keep the screen on: open Settings → Display & Brightness → Auto-Lock and pick Never while you focus.':' This browser can\'t keep the screen on while the timer runs.';
+function notifyEnd(title,body){try{if(document.visibilityState==='visible')return;const r=window.__rm;if(r&&r.granted&&r.granted())r.show(title,body,'studyflow-timer')}catch(e){}}
 function setMode(m){stopTick();T.mode=m;T.len=T.left=modeLen(m);$('#startTimer').textContent='Start';drawTimer()}
 function drawTimer(){
   const mm=String(Math.floor(T.left/60)).padStart(2,'0'),ss=String(T.left%60).padStart(2,'0');
@@ -881,20 +890,22 @@ function finish(){
   stopTick();chime();
   if(T.mode==='focus'){const m=Math.round(T.len/60),k=iso(new Date());log[k]=(log[k]||0)+m;store(LKEY,log);T.done++;
     const tk=tasks.find(t=>String(t.id)===$('#focusTask').value),next=T.done%4===0?'long':'short';setMode(next);
-    $('#timerMsg').textContent=`Nice work! ${m} minutes${tk?' on '+tk.title:''} logged. Time for a ${next==='long'?'15':'5'}-minute break.`;toast('Focus session complete ✦')}
-  else{setMode('focus');$('#timerMsg').textContent='Break over. Ready for the next focus session?'}
+    const msg=`Nice work! ${m} minutes${tk?' on '+tk.title:''} logged. Time for a ${next==='long'?'15':'5'}-minute break.`;
+    $('#timerMsg').textContent=msg;toast('Focus session complete ✦');notifyEnd('Focus session complete',msg)}
+  else{setMode('focus');$('#timerMsg').textContent='Break over. Ready for the next focus session?';notifyEnd('Break over','Ready for the next focus session?')}
   renderLog();
 }
 $('#startTimer').onclick=()=>{
   try{audio=audio||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
   if(T.iv){stopTick();T.left=Math.max(0,Math.ceil((T.end-Date.now())/1000));$('#startTimer').textContent='Resume';$('#timerMsg').textContent='Paused.';drawTimer();return}
   T.end=Date.now()+T.left*1000;T.iv=setInterval(tick,250);$('#startTimer').textContent='Pause';
-  $('#timerMsg').textContent=T.mode==='focus'?'Focus time. One thing at a time.':'Take a real break. Stand up and stretch.';drawTimer();
+  $('#timerMsg').textContent=(T.mode==='focus'?'Focus time. One thing at a time.':'Take a real break. Stand up and stretch.')+awakeNote();drawTimer();keepAwake();
 };
 $('#resetTimer').onclick=()=>{setMode(T.mode);$('#timerMsg').textContent='Timer reset.'};
 $('#focusLen').onchange=()=>{if(!T.iv&&T.mode==='focus')setMode('focus')};
 $$('[data-tmode]').forEach(b=>b.onclick=()=>{if(T.iv&&!b.dataset.armed){b.dataset.armed='1';toast('Timer is running. Tap again to switch.');setTimeout(()=>delete b.dataset.armed,3000);return}delete b.dataset.armed;setMode(b.dataset.tmode);$('#timerMsg').textContent='Ready when you are.'});
-document.addEventListener('visibilitychange',()=>{if(T.iv)tick()});
+document.addEventListener('visibilitychange',()=>{if(T.iv){tick();if(document.visibilityState==='visible')keepAwake()}});
+window.__focus={T,finish,awake:()=>!!wake};
 
 /* ---------- Page hooks ---------- */
 const baseGo=go;
@@ -2001,7 +2012,7 @@ $('#rmTest').addEventListener('click',()=>{if(granted())show('StudyFlow reminder
 ui();check();setTimeout(check,8000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
 setInterval(check,30*60*1000);
-window.__rm={check,load};
+window.__rm={check,load,show,granted};
 })();
 </script>
 <script>
