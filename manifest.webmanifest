@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Ravora",
-  "short_name": "Ravora",
+  "name": "StudyFlow",
+  "short_name": "StudyFlow",
   "description": "A study planner for classes, assignments, grades, flashcards and focus time.",
   "start_url": "./",
   "scope": "./",

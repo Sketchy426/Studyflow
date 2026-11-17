@@ -1,9 +1,9 @@
-// Ravora Schoology relay: a Cloudflare Worker that fetches your Schoology calendar feed
-// so the Ravora page can read it (Schoology doesn't let other websites read it directly).
-// It only fetches Schoology calendar feed links, only answers Ravora's own pages,
+// StudyFlow Schoology relay: a Cloudflare Worker that fetches your Schoology calendar feed
+// so the StudyFlow page can read it (Schoology doesn't let other websites read it directly).
+// It only fetches Schoology calendar feed links, only answers StudyFlow's own pages,
 // and stores and logs nothing.
 
-// The Ravora sites allowed to use this relay. Add your own address here if it changes.
+// The StudyFlow sites allowed to use this relay. Add your own address here if it changes.
 const ALLOWED_ORIGINS = ['https://studyflow-one-pi.vercel.app', 'https://sketchy426.github.io'];
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_REDIRECTS = 3;

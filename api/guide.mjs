@@ -1,14 +1,14 @@
-// Ravora AI as a Vercel Function: POST /api/guide
+// StudyFlow AI as a Vercel Function: POST /api/guide
 //   {"messages":[{"role":"user","content":"…"},…],"today":"2026-11-02","planner":["Essay — English, due Friday"]}
 // Answers with one JSON object per line: {"text":"…"} pieces, then {"done":true,"stop":"end_turn"} or {"error":"…"}.
-// Every request needs the student's Ravora (Firebase) sign-in: "Authorization: Bearer <Firebase ID token>".
+// Every request needs the student's StudyFlow (Firebase) sign-in: "Authorization: Bearer <Firebase ID token>".
 //
 // Environment variables (Vercel, never in the code):
 // - ANTHROPIC_API_KEY     the Claude API key. Whoever owns it pays for every question.
 // - GUIDE_ALLOWED_EMAILS  comma-separated Google accounts that may use the guide. Empty means nobody can.
 //
 // Security:
-// - Only listed accounts can spend the key, and only Ravora's own pages get an answer.
+// - Only listed accounts can spend the key, and only StudyFlow's own pages get an answer.
 // - Stores nothing and logs nothing. The conversation lives in the browser tab.
 import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
@@ -22,7 +22,7 @@ const MAX_MESSAGES = 40, MAX_MESSAGE_CHARS = 20000, MAX_TOTAL_CHARS = 60000;
 const MAX_PLANNER_ITEMS = 30, MAX_PLANNER_ITEM_CHARS = 200, MAX_DECKS_CHARS = 4000;
 export const maxDuration = 60;
 
-const SYSTEM = `You are the AI inside Ravora, a study planner used by a school-age student. Answer whatever they ask, whether it's about schoolwork or anything else they're curious about, the way a smart, patient friend would. Explain things clearly at their level without talking down to them.
+const SYSTEM = `You are the AI inside StudyFlow, a study planner used by a school-age student. Answer whatever they ask, whether it's about schoolwork or anything else they're curious about, the way a smart, patient friend would. Explain things clearly at their level without talking down to them.
 
 For work that will be graded, help them learn to do it themselves: explain ideas, show worked examples on similar problems, give outlines and feedback, and check their answers. Don't write the final text or answers for them to hand in.
 
@@ -32,11 +32,11 @@ You can't browse the internet, so if an answer depends on recent events or live 
 
 Write in plain, friendly language and don't use emojis. Keep answers as short as the question allows. You can use **bold**, lists, short headings and code blocks. Write math as plain text, such as x^2 + 3x = 10, not LaTeX.
 
-You can change the student's flashcards in Ravora directly. To do that, put one or more commands in your reply inside a fenced code block whose language is studyflow, one JSON object per line, like this:
+You can change the student's flashcards in StudyFlow directly. To do that, put one or more commands in your reply inside a fenced code block whose language is studyflow, one JSON object per line, like this:
 \`\`\`studyflow
 {"action":"add_cards","deck":"Cell parts","cards":[{"q":"What does the nucleus do?","a":"Holds the cell's DNA"}]}
 \`\`\`
-Actions: add_cards (makes the deck if it doesn't exist; optional "class" with the class name), edit_card {"deck","q","new_q","new_a"} where q must match a listed question, delete_cards {"deck","qs":[...]}, rename_deck {"deck","name"}, delete_deck {"deck"}. Ravora applies the commands, hides the block, and shows the student what changed with an Undo button. When the student asks you to make flashcards from a topic or from notes they give you, write the cards in your reply as lines like Q: question | A: answer, one card per line and nothing else on those lines, so they can read them, copy them, or save them with one click; Ravora adds Save and Open in Flashcards buttons under such an answer. Use a command block only when they ask you to change decks they already have (edit, delete, rename, or add to an existing deck by name). Only change flashcards when the student asks for it, and never delete a deck unless they clearly ask. The student's current decks and their questions are listed below.
+Actions: add_cards (makes the deck if it doesn't exist; optional "class" with the class name), edit_card {"deck","q","new_q","new_a"} where q must match a listed question, delete_cards {"deck","qs":[...]}, rename_deck {"deck","name"}, delete_deck {"deck"}. StudyFlow applies the commands, hides the block, and shows the student what changed with an Undo button. When the student asks you to make flashcards from a topic or from notes they give you, write the cards in your reply as lines like Q: question | A: answer, one card per line and nothing else on those lines, so they can read them, copy them, or save them with one click; StudyFlow adds Save and Open in Flashcards buttons under such an answer. Use a command block only when they ask you to change decks they already have (edit, delete, rename, or add to an existing deck by name). Only change flashcards when the student asks for it, and never delete a deck unless they clearly ask. The student's current decks and their questions are listed below.
 
 When they ask to be quizzed, ask one question at a time, wait for their answer, say whether it was right, and keep a running score.
 
@@ -44,7 +44,7 @@ The student's unfinished assignments may be listed below. Use them when the stud
 
 class Fail extends Error { constructor(status, msg, code) { super(msg); this.status = status; this.code = code; } }
 
-/* ---------- Ravora sign-in (Firebase ID token, checked against Google's public keys) ---------- */
+/* ---------- StudyFlow sign-in (Firebase ID token, checked against Google's public keys) ---------- */
 let keyCache = { keys: null, until: 0 };
 async function googleKeys() {
   if (keyCache.keys && Date.now() < keyCache.until) return keyCache.keys;
@@ -102,7 +102,7 @@ function systemFor(body) {
   ];
 }
 function friendly(e) {
-  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return "Ravora's AI key isn't working. Ask the person who set it up to check it.";
+  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return "StudyFlow's AI key isn't working. Ask the person who set it up to check it.";
   if (e instanceof Anthropic.RateLimitError) return 'The AI is getting too many questions, or has reached its spending limit. Try again in a little while.';
   if (e instanceof Anthropic.BadRequestError) return "The AI couldn't read that message. Reload the page and try again.";
   if (e instanceof Anthropic.APIConnectionError) return "Couldn't reach the AI. Check your connection and try again.";
@@ -122,7 +122,7 @@ async function handle(request) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, h);
   try {
     checkAllowed(await signedInUser(request));
-    if (!process.env.ANTHROPIC_API_KEY) throw new Fail(503, "Ravora's AI isn't set up yet.", 'not_set_up');
+    if (!process.env.ANTHROPIC_API_KEY) throw new Fail(503, "StudyFlow's AI isn't set up yet.", 'not_set_up');
     let body; try { body = await request.json(); } catch (e) { throw new Fail(400, 'Bad request'); }
     const messages = readMessages(body), system = systemFor(body);
     const encoder = new TextEncoder();
