@@ -4,7 +4,7 @@ Renamed from StudyFlow to Ravora on 2026-11-17 (the name now covers a planned wo
 
 A study planner for students: classes, assignments, calendar, grades, GPA, flashcards, a focus timer, and import from Google Classroom and Schoology. It is a single static HTML file with no build step, and it saves everything in the browser (localStorage).
 
-- **Live site (main):** https://ravoraapp.com/ (also https://studyflow-one-pi.vercel.app/; Vercel, every push to `main` redeploys in about a minute)
+- **Live site (main):** https://studyflow-one-pi.vercel.app/ (Vercel; every push to `main` redeploys in about a minute)
 - **Mirror:** https://sketchy426.github.io/Studyflow/ (GitHub Pages, also built from `main`)
 
 The two sites keep separate saved data, because browser storage belongs to one web address. To move data between them, use **Settings → Backup**, then **Restore** on the other site.

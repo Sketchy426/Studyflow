@@ -4,7 +4,7 @@
 // and stores and logs nothing.
 
 // The Ravora sites allowed to use this relay. Add your own address here if it changes.
-const ALLOWED_ORIGINS = ['https://ravoraapp.com', 'https://www.ravoraapp.com', 'https://studyflow-one-pi.vercel.app', 'https://sketchy426.github.io'];
+const ALLOWED_ORIGINS = ['https://studyflow-one-pi.vercel.app', 'https://sketchy426.github.io'];
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 
