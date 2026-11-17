@@ -13,7 +13,7 @@
 import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 
-const ALLOWED_ORIGINS = ['https://studyflow-one-pi.vercel.app', 'https://sketchy426.github.io'];
+const ALLOWED_ORIGINS = ['https://ravoraapp.com', 'https://www.ravoraapp.com', 'https://studyflow-one-pi.vercel.app', 'https://sketchy426.github.io'];
 const FIREBASE_PROJECT = 'studyflow-dca86';
 const GOOGLE_KEYS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 const MODEL = 'claude-opus-5-5';
