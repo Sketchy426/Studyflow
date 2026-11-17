@@ -1006,13 +1006,14 @@ window.__work={get W(){return W},renderWork,hrs,pay,setOn};
 const MKEY='studyflowMode';
 const MODES={
   school:{hide:['work'],eyebrow:'Student workspace',hint:'School: classes, assignments, grades, flashcards and the planner. The Work page is hidden.'},
-  work:{hide:['classes','assignments','grades','study','flashcards'],eyebrow:'Work workspace',hint:'Work: shifts, hours, pay and work to-dos, with the calendar and the focus timer. School pages are hidden.'},
+  work:{hide:['classes','assignments','grades','study','flashcards','focus'],eyebrow:'Work workspace',hint:'Work: shifts, hours, pay and work to-dos, with the calendar. School pages and the focus timer are hidden.'},
   planning:{hide:['classes','grades','flashcards'],eyebrow:'Planning workspace',hint:'Planning: assignments, work, the calendar and study sessions together. Classes, grades and flashcards are hidden.'}};
 let mode='school';try{const v=localStorage.getItem(MKEY);if(MODES[v])mode=v}catch(e){}
+const focusOff=()=>{try{return localStorage.getItem('studyflowFocusEnabled')==='off'}catch(e){return false}};
 function renderDashPlan(){const el=$('#dashPlanList');if(!el||mode!=='planning')return;const up=sessions.filter(s=>s.date>=iso(today)).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||''))).slice(0,4);
   el.innerHTML=up.length?up.map(s=>`<div class="task"><div class="task-info"><div class="task-title">${safe(s.title)}</div><div class="meta">${safe(s.subject)} · ${date(s.date)}${s.time?' at '+safe(s.time):''} · ${safe(s.duration)}</div></div></div>`).join(''):'<div class="empty">No study sessions planned. Add one in the Planner.</div>'}
 function apply(){const m=MODES[mode],show=(sel,yes)=>{const el=$(sel);if(el)el.style.display=yes?'':'none'};
-  $$('.nav[data-page]').forEach(b=>{if(b.dataset.page!=='focus')b.hidden=m.hide.includes(b.dataset.page)});
+  $$('.nav[data-page]').forEach(b=>{const p=b.dataset.page;b.hidden=m.hide.includes(p)||(p==='focus'&&focusOff())});
   $('#eyebrow').textContent=m.eyebrow.toUpperCase();
   $$('#modeSeg [data-mode]').forEach(b=>{const on=b.dataset.mode===mode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false')});$('#modeHint').textContent=m.hint;
   show('#dashStats',mode!=='work');show('#dueAlert',mode!=='work');show('#dashColumns',mode!=='work');show('#dashWorkStats',mode==='work');$('#dashPlan').hidden=mode!=='planning';
@@ -1178,7 +1179,7 @@ newGame();
 (function(){
 const K='studyflowFocusEnabled',navBtn=$('.nav[data-page="focus"]'),box=$('#focusToggle');
 let on=true;try{on=localStorage.getItem(K)!=='off'}catch(e){}
-function apply(){navBtn.hidden=!on;box.checked=on;$('#focusToggleState').textContent=on?'On':'Off'}
+function apply(){navBtn.hidden=!on||(window.__mode&&window.__mode.get()==='work');box.checked=on;$('#focusToggleState').textContent=on?'On':'Off'}
 box.onchange=()=>{
   on=box.checked;try{localStorage.setItem(K,on?'on':'off')}catch(e){}
   if(!on){if($('#startTimer').textContent!=='Start')$('#resetTimer').click();if($('#page-focus').classList.contains('active'))go('dashboard')}
