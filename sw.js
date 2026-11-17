@@ -1,4 +1,4 @@
-// StudyFlow service worker: lets the installed app open offline.
+// Ravora service worker: lets the installed app open offline.
 // Pages load from the network first so updates show right away; the saved copy is used only when offline.
 // Bump VERSION when the list of app files changes.
 const VERSION = 'studyflow-v3';
@@ -31,7 +31,7 @@ self.addEventListener('fetch', e => {
   })));
 });
 
-// A tapped reminder brings StudyFlow to the front, or opens it.
+// A tapped reminder brings Ravora to the front, or opens it.
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {

@@ -1,14 +1,14 @@
-// StudyFlow Schoology API sync as a Vercel Function: POST /api/schoology-api
+// Ravora Schoology API sync as a Vercel Function: POST /api/schoology-api
 //   {"action":"connect","key":"…","secret":"…"}  checks a personal Schoology API key and returns it locked (encrypted)
 //   {"action":"sync","token":"…"}                  reads the student's classes, assignments, due dates and grades
-// Every request needs the student's StudyFlow (Firebase) sign-in: "Authorization: Bearer <Firebase ID token>".
+// Every request needs the student's Ravora (Firebase) sign-in: "Authorization: Bearer <Firebase ID token>".
 //
 // Security:
 // - Read-only: it only sends GET requests to api.schoology.com, so it can't turn in, change or delete anything.
 // - Stores nothing and logs nothing. The key comes back sealed with AES-256-GCM using SCHOOLOGY_TOKEN_KEY
 //   (a Vercel environment variable, never in the code) and bound to the student's Firebase account, so a copied
 //   token is useless without both this server's secret and that student's sign-in.
-// - Only answers StudyFlow's own pages.
+// - Only answers Ravora's own pages.
 import crypto from 'node:crypto';
 
 const ALLOWED_ORIGINS = ['https://studyflow-one-pi.vercel.app', 'https://sketchy426.github.io'];
@@ -21,7 +21,7 @@ export const maxDuration = 60;
 class Fail extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/* ---------- StudyFlow sign-in (Firebase ID token, checked against Google's public keys) ---------- */
+/* ---------- Ravora sign-in (Firebase ID token, checked against Google's public keys) ---------- */
 let keyCache = { keys: null, until: 0 };
 async function googleKeys() {
   if (keyCache.keys && Date.now() < keyCache.until) return keyCache.keys;
@@ -50,7 +50,7 @@ async function signedInUser(request) {
 /* ---------- Locking the key ---------- */
 function secretKey() {
   const k = Buffer.from(process.env.SCHOOLOGY_TOKEN_KEY || '', 'base64');
-  if (k.length !== 32) throw new Fail(500, "StudyFlow's server isn't set up for Schoology keys yet (SCHOOLOGY_TOKEN_KEY is missing).");
+  if (k.length !== 32) throw new Fail(500, "Ravora's server isn't set up for Schoology keys yet (SCHOOLOGY_TOKEN_KEY is missing).");
   return k;
 }
 function seal(data, uid) {
@@ -67,7 +67,7 @@ function unseal(token, uid) {
     return JSON.parse(Buffer.concat([d.update(b.subarray(28)), d.final()]).toString());
   } catch (e) {
     if (e instanceof Fail) throw e;
-    throw new Fail(403, 'This Schoology connection belongs to a different StudyFlow account, or has expired. Connect Schoology again.');
+    throw new Fail(403, 'This Schoology connection belongs to a different Ravora account, or has expired. Connect Schoology again.');
   }
 }
 
@@ -122,7 +122,7 @@ async function me(cred) {
   return { id: String(u.uid || u.id), name: u.name_display || [u.name_first, u.name_last].filter(Boolean).join(' ') };
 }
 
-/* ---------- Building StudyFlow's course list (same shape as a pasted Grades page) ---------- */
+/* ---------- Building Ravora's course list (same shape as a pasted Grades page) ---------- */
 const day = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m && m[1] !== '0000' ? `${m[1]}-${m[2]}-${m[3]}` : ''; };
 const usDate = v => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(v || ''); if (!m) return ''; const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`; };
 const num = v => v === null || v === undefined || v === '' || isNaN(+v) ? null : +v;

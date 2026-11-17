@@ -1,8 +1,8 @@
-// StudyFlow Schoology relay as a Vercel Function: POST /api/schoology {"url": "<feed link>"}.
+// Ravora Schoology relay as a Vercel Function: POST /api/schoology {"url": "<feed link>"}.
 // Same rules as worker/schoology-relay.js (the Cloudflare version): it only fetches Schoology
-// calendar feed links, only answers StudyFlow's own pages, and stores and logs nothing.
+// calendar feed links, only answers Ravora's own pages, and stores and logs nothing.
 
-// The StudyFlow sites allowed to use this relay. Add your own address here if it changes.
+// The Ravora sites allowed to use this relay. Add your own address here if it changes.
 const ALLOWED_ORIGINS = ['https://studyflow-one-pi.vercel.app', 'https://sketchy426.github.io'];
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
