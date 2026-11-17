@@ -1,7 +1,7 @@
 // Ravora service worker: lets the installed app open offline.
 // Pages load from the network first so updates show right away; the saved copy is used only when offline.
 // Bump VERSION when the list of app files changes.
-const VERSION = 'studyflow-v4';
+const VERSION = 'studyflow-v3';
 const APP_FILES = ['./', 'index.html', 'manifest.webmanifest', 'wordle-words.txt', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
