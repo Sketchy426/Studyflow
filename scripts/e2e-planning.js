@@ -829,6 +829,13 @@ async function main() {
         }
       };
       await shoot("");
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 659, deviceScaleFactor: 1, mobile: true });
+      await A.nav("plan");
+      await A.click("#addPlan");
+      await A.ev(`document.querySelector("#modalBg .modal").scrollTop = 1e4`);
+      await sleep(350);
+      fs.writeFileSync(path.join(SHOTS, "daydream-plan-form-393x659.png"), Buffer.from((await A.send("Page.captureScreenshot", { format: "png" })).result.data, "base64"));
+      await A.click("#cancel");
       await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
       await A.nav("plan");
       await A.click(`[data-plan-open="${trip.id}"]`);
