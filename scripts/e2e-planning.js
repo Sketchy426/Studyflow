@@ -201,9 +201,10 @@ async function devtoolsPort() {
 }
 
 // What a student sees and can do with calendar events in one mode. Run on both builds and compared.
-async function eventProbe(A, url, mode) {
-  await A.fresh(url, { studyflowMode: mode });
+async function eventProbe(A, url, mode, seed) {
+  await A.fresh(url, { ...seed, studyflowMode: mode });
   const out = {};
+  out.first = { chips: await A.texts(".day.today .chip"), trash: await A.texts("#trashList h4") };
   const pages = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.dataset.page)`);
   out.nav = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.textContent.trim())`);
   out.titles = [];
@@ -236,6 +237,8 @@ async function eventProbe(A, url, mode) {
   out.toast = await A.text("#toast");
   out.events = (await A.ls("studyflowEvents")).map(({ id, date, ...e }) => e);
   out.trash = (await A.ls("studyflowTrash")).map((t) => [t.kind, t.label, t.mode, Object.keys(t.data).sort().join()]);
+  await A.nav("settings");
+  out.trashShown = await A.texts("#trashList h4");
   return out;
 }
 
@@ -267,10 +270,21 @@ async function main() {
     const planByTitle = async (t) => (await A.ls("studyflowEvents")).find((e) => e.title === t);
 
     await scenario("[7] School and Work are unchanged", async () => {
+      const ev = (id, title, mode, more = {}) => ({ id, title, date: today, start: "", end: "", note: "", ...(mode ? { mode } : {}), ...more });
+      const gone = (id, title, mode) => ({ id: "t" + id, kind: "pevent", label: title, data: ev(id, title, mode), at: Date.now() - 864e5, mode });
+      const seed = {
+        studyflowEvents: [ev(41, "School fair", "school", { start: "10:00", note: "Gym" }), ev(42, "Inventory", "work"), ev(43, "Beach day", "planning", { type: "trip", place: "Pier", emoji: "🏖️" }), ev(44, "Old picnic")],
+        studyflowPlanning: { v: 1, todos: [{ id: 51, title: "Buy film", due: today, priority: "Medium", note: "", done: false }] },
+        studyflowTrash: [gone(61, "School trash", "school"), gone(62, "Work trash", "work"), gone(63, "Plan trash", "planning")],
+      };
+      const own = { school: ["School fair", "School trash"], work: ["Inventory", "Work trash"] };
       for (const mode of ["school", "work"]) {
-        const before = await eventProbe(A, OLD, mode);
-        const after = await eventProbe(A, NEW, mode);
-        for (const k of Object.keys(before)) check(`[7] ${mode}: ${k} matches the old build`, same(before[k], after[k]), `old ${JSON.stringify(before[k])} new ${JSON.stringify(after[k])}`);
+        const before = await eventProbe(A, OLD, mode, seed);
+        const after = await eventProbe(A, NEW, mode, seed);
+        const [event, trash] = own[mode];
+        check(`[7] ${mode}: the first draw after loading shows only this section's event and Recently deleted`, after.first.chips.length === 1 && after.first.chips[0].includes(event) && same(after.first.trash, [trash]), JSON.stringify(after.first));
+        if (!same(before.first, after.first)) console.log(`INFO ${mode}: the old build's first draw showed ${JSON.stringify(before.first)}, the new build's ${JSON.stringify(after.first)}`);
+        for (const k of Object.keys(before)) if (k !== "first" || mode === "school") check(`[7] ${mode}: ${k} matches the old build`, same(before[k], after[k]), `old ${JSON.stringify(before[k])} new ${JSON.stringify(after[k])}`);
       }
     });
 
@@ -630,6 +644,33 @@ async function main() {
       await A.nav("settings");
       await A.click("#trashList [data-restore]");
       check("[6] a pevent trash entry made by the old build restores as a plan", !!(await planByTitle("Legacy picnic")) && (await A.ls("studyflowTrash")).length === 0);
+    });
+
+    await scenario("[6] a plan deleted in the new build and restored by the old one keeps its checklist", async () => {
+      await A.fresh(NEW, seedV1);
+      await A.nav("plan");
+      await A.newPlan({ title: "Picnic", type: "outing", date: await inDays(6), place: "Park" });
+      const pic = await planByTitle("Picnic");
+      await A.click(`[data-plan-open="${pic.id}"]`);
+      await A.addTodo("#planModal", pic.id, "blanket");
+      await A.addTodo("#planModal", pic.id, "lemonade");
+      await A.click("#planModal [data-plan-todo]");
+      await A.click("#planModal [data-plan-del]");
+      await A.click("#confirmYes");
+      check("[6] the new build deleted the plan and its items", !(await planByTitle("Picnic")) && (await A.ls("studyflowPlanning")).todos.every((t) => t.planId !== pic.id));
+      await A.load(OLD);
+      // The old build leaves Recently deleted empty after a load in Planning mode until something redraws it.
+      await A.setMode("school");
+      await A.setMode("planning");
+      check("[6] the old build lists the deleted plan", same(await A.texts("#trashList h4"), ["Picnic"]), JSON.stringify(await A.texts("#trashList h4")));
+      await A.click("#trashList [data-restore]");
+      check("[6] the old build restored it", !!(await planByTitle("Picnic")));
+      await A.load(NEW);
+      await A.nav("plan");
+      await A.click(`[data-plan-open="${pic.id}"]`);
+      check("[6] the new build shows the restored plan with its place and checklist", (await A.text("#planModalTitle")) === "Picnic" && (await A.text("#planModal")).includes("Park") && same(await A.texts("#planModal .dd-check-title"), ["blanket", "lemonade"]) && (await A.text("#planModal .dd-progress")) === "1 of 2 done", await A.text("#planModal"));
+      const stored = await planByTitle("Picnic");
+      check("[6] the items are back in studyflowPlanning, not inside the event", !("todos" in stored) && (await A.ls("studyflowPlanning")).todos.filter((t) => t.planId === pic.id).length === 2, JSON.stringify(stored));
     });
 
     await scenario("[6] sync and restore paths", async () => {
