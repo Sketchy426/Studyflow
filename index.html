@@ -1126,7 +1126,7 @@ window.__work={get W(){return W},renderWork,hrs,pay,setOn};
    A build from before Daydream that is still open somewhere rewrites studyflowPlanning as {v,todos} and studyflowEvents as the same event objects, so new data may only live as extra fields on a to-do or an event, or in a new key.
    Calendar events for School and Work (each tagged with its section) are handled here too and behave as before. ---------- */
 (function(){
-const PKEY='studyflowPlanning',EKEY='studyflowEvents',MKEY='studyflowMemories',PHOTO_MAX=1000,PHOTO_QUALITY=.78,PHOTO_KEEP_DAYS=30;
+const PKEY='studyflowPlanning',EKEY='studyflowEvents',MKEY='studyflowMemories',PHOTO_MAX=1000,PHOTO_QUALITY=.78,PHOTO_KEEP_DAYS=30,PHOTO_WAIT_MS=4000;
 const PLAN_TYPES={trip:{label:'Vacation',form:'Vacation / Trip',filter:'Vacations',emoji:'🏖️'},event:{label:'Event',form:'Event / Party',filter:'Events',emoji:'🎉'},outing:{label:'Outing',form:'Outing / Activity',filter:'Outings',emoji:'🧋'},other:{label:'Other',form:'Other plan',filter:'Other',emoji:'✨'}};
 const EMOJIS=['🏖️','🎉','🧋','✨','🎂','✈️','🏕️','🍽️','🎬','🌸'],MOODS=['Happy ☀️','Excited ✨','Peaceful 🌿','Grateful ♡','Silly 😄','Adventurous 🗺️','Cozy ☁️'];
 const DD_TITLES={dashboard:['Hey there, planner! ☁️','What are we dreaming up today?'],calendar:['Your calendar 📅','Every plan, right where it belongs.']};
@@ -1183,7 +1183,8 @@ const memoryGrid=(list,del)=>list.length?list.map(m=>memoryCard(m,del)).join('')
 /* Photos. Each record is {blob, orphanedAt?}. */
 let dbp=null;
 const photoDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('studyflow',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos');r.onsuccess=()=>{r.result.onversionchange=()=>{r.result.close();dbp=null};res(r.result)};r.onerror=()=>rej(r.error)}).catch(e=>{dbp=null;throw e}));
-const photoTx=(rw,run)=>photoDb().then(db=>new Promise((res,rej)=>{const tx=db.transaction('photos',rw),out=run(tx.objectStore('photos'));tx.oncomplete=()=>res(out&&out.result);tx.onerror=tx.onabort=()=>rej(tx.error)}));
+// An IndexedDB that never answers must not leave a memory waiting to be saved.
+const photoTx=(rw,run)=>Promise.race([photoDb().then(db=>new Promise((res,rej)=>{const tx=db.transaction('photos',rw),out=run(tx.objectStore('photos'));tx.oncomplete=()=>res(out&&out.result);tx.onerror=tx.onabort=()=>rej(tx.error)})),new Promise((res,rej)=>setTimeout(()=>rej(new Error('photo store timed out')),PHOTO_WAIT_MS))]);
 const photoUrls=new Map();
 function photoUrl(id){if(!photoUrls.has(id)){const p=photoTx('readonly',s=>s.get(id)).then(r=>r&&r.blob?URL.createObjectURL(r.blob):null);p.catch(()=>photoUrls.delete(id));photoUrls.set(id,p)}return photoUrls.get(id)}
 function showPhotos(root){$$(root+' [data-photo]').forEach(h=>photoUrl(h.dataset.photo).then(u=>{if(!h.isConnected)return;if(!u){h.innerHTML='<div class="dd-memory-image dd-placeholder dd-away">This photo is on another device</div>';return}const i=new Image();i.className='dd-memory-image';i.alt=h.dataset.alt;i.src=u;h.replaceChildren(i)},()=>{}))}

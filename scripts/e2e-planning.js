@@ -483,6 +483,24 @@ async function main() {
       check("[4] dashboard shows the latest memory with its photo", (await A.count("#dashMemories .dd-memory")) === 1 && (await A.ev(`!!document.querySelector("#dashMemories img[src^='blob:']")`)));
     });
 
+    await scenario("[4] a photo store that never answers", async () => {
+      const stub = await A.send("Page.addScriptToEvaluateOnNewDocument", { source: "IDBFactory.prototype.open = function () { return {}; };" });
+      try {
+        await A.fresh(NEW, planning);
+        await A.nav("journal");
+        await A.pickPhoto();
+        await A.setValue("#memoryTitle", "No database");
+        await A.ev(`document.querySelector("#memoryForm").requestSubmit()`);
+        await sleep(5000);
+        const mem = (await A.ls("studyflowMemories"))?.[0];
+        check("[4] within 5 seconds the memory is saved without its photo", mem?.title === "No database" && mem.hasPhoto === false, JSON.stringify(mem));
+        check("[4] the student is told the photo was left out", /left out/.test(await A.text("#toast")), await A.text("#toast"));
+        check("[4] the save button works again", (await A.ev(`document.querySelector("#memoryForm button[type=submit]").disabled`)) === false);
+      } finally {
+        await A.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: stub.result.identifier });
+      }
+    });
+
     await scenario("checklists page", async () => {
       await A.fresh(NEW, seedV1);
       await A.nav("checklists");
