@@ -216,7 +216,7 @@ async function eventProbe(A, url, mode) {
   out.look = await A.themeVars();
   await A.nav("calendar");
   const form = () => A.ev(`[document.querySelector("#modalTitle").textContent, ...[...document.querySelectorAll("#modalFields label")].map((l) => { const i = l.querySelector("input,select,textarea"); return [l.textContent.trim(), i.name, i.type, i.required, i.name === "date" ? "<date>" : i.value]; })]`);
-  out.calHead = [await A.text("#calSub"), await A.text("#addCalEvent")];
+  out.calHead = [await A.text("#calSub"), await A.text("#addCalEvent"), await A.ev(`document.querySelector("#calLegend").innerText`)];
   await A.click("#addCalEvent");
   out.form1 = await form();
   out.modalBox = await A.ev(`(() => { const s = getComputedStyle(document.querySelector("#modalBg .modal")); return [s.maxHeight, s.overflowY, s.borderRadius]; })()`);
@@ -447,6 +447,9 @@ async function main() {
       check("[3] tapping the chip opens that plan", (await A.count("#planBg.show")) === 1 && (await A.text("#planModalTitle")) === "Today thing");
       await A.press("Escape");
       check("[3] Escape closes the plan", (await A.count("#planBg.show")) === 0);
+      const legend = await A.ev(`document.querySelector("#calLegend").innerText`);
+      check("[3] the color key calls plans Plans", /\bPlans\b/.test(legend) && !/\bEvents\b/.test(legend), JSON.stringify(legend));
+      check("[3] a plan's line in the day list says Plan", (await A.text("#calDay .meta")).startsWith("Plan · Outing"), await A.text("#calDay .meta"));
       check("[3] a plan's row in the day list has no one-tap Delete", (await A.count("#calDay [data-cal-event-del]")) === 0 && (await A.count("#calDay .task")) === 1, JSON.stringify(await A.ev(`document.querySelector("#calDay").innerText`)));
       await A.click("#calDay [data-plan-open]");
       check("[3] the plan in the day list opens it too", (await A.text("#planModalTitle")) === "Today thing");
