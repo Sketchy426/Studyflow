@@ -1,5 +1,5 @@
 // Drives Daydream mode (stored as "planning") in headless Chrome over CDP, next to the build from before it existed.
-// Usage: node scripts/e2e-planning.js   (OLD_REF=<commit> picks the old build, SHOTS=<dir> also saves screenshots)
+// Usage: node scripts/e2e-planning.js   (OLD_REF=<commit> picks the old build, SHOTS=<dir> also saves screenshots, ONLY=<text> runs only scenarios whose name contains it)
 const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
@@ -11,6 +11,7 @@ const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/M
 // Pinned to the last commit before this feature: "main" stops being the old build once this branch merges.
 const OLD_REF = process.env.OLD_REF || "dd49bba";
 const SHOTS = process.env.SHOTS || "";
+const ONLY = process.env.ONLY || "";
 const DD_ACCENT = "#6f83df";
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "studyflow-e2e-"));
 let failures = 0;
@@ -25,6 +26,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const errors = [];
 
 async function scenario(name, run) {
+  if (!name.includes(ONLY)) return;
   try {
     await run();
   } catch (err) {
@@ -217,6 +219,7 @@ async function eventProbe(A, url, mode) {
   out.calHead = [await A.text("#calSub"), await A.text("#addCalEvent")];
   await A.click("#addCalEvent");
   out.form1 = await form();
+  out.modalBox = await A.ev(`(() => { const s = getComputedStyle(document.querySelector("#modalBg .modal")); return [s.maxHeight, s.overflowY, s.borderRadius]; })()`);
   await A.setValue('#modalForm [name="title"]', "Probe A");
   await A.setValue('#modalForm [name="start"]', "15:00");
   await A.setValue('#modalForm [name="note"]', "Room 4");
@@ -392,6 +395,27 @@ async function main() {
       const back = await planByTitle("Ski weekend");
       const backTodos = (await A.ls("studyflowPlanning")).todos.filter((t) => t.planId === ski.id);
       check("[2] restore puts the plan and its checklist back", back && back.place === "Tahoe" && !("todos" in back) && backTodos.length === 1 && backTodos[0].title === "bring skis" && backTodos[0].done === true, JSON.stringify([back, backTodos]));
+    });
+
+    await scenario("[phone] the plan form can be saved on a phone", async () => {
+      for (const [w, h] of [[393, 659], [375, 553]]) {
+        await A.fresh(NEW, seedV1);
+        await A.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: true });
+        await sleep(300);
+        const save = '#modalForm [type="submit"]';
+        const where = () => A.ev(`(() => { const b = document.querySelector(${JSON.stringify(save)}).getBoundingClientRect(); return [Math.round(b.top), Math.round(b.bottom), innerHeight]; })()`);
+        await A.nav("plan");
+        await A.click("#addPlan");
+        await A.setValue('#modalForm [name="title"]', `Phone plan ${w}`);
+        await A.tap(save);
+        check(`[phone] ${w}x${h}: a real tap on Save in the new-plan form creates the plan`, !!(await planByTitle(`Phone plan ${w}`)) && (await A.count("#modalBg.show")) === 0, `Save button top, bottom, viewport ${JSON.stringify(await where())}`);
+        await A.click('[data-plan-open="21"]');
+        await A.click("#planModal [data-plan-edit]");
+        await A.setValue('#modalForm [name="title"]', `Edited ${w}`);
+        await A.tap(save);
+        check(`[phone] ${w}x${h}: a real tap on Save in the edit form saves the plan`, (await planByTitle(`Edited ${w}`))?.id === 21 && (await A.count("#modalBg.show")) === 0, `Save button top, bottom, viewport ${JSON.stringify(await where())}`);
+      }
+      await A.send("Emulation.clearDeviceMetricsOverride");
     });
 
     await scenario("[3] calendar in Daydream mode", async () => {
