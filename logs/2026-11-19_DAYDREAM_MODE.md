@@ -35,12 +35,22 @@ While the mode is on, `<html>` carries `data-theme="daydream"` in place of the s
 - 200 memories of 4000 ASCII characters make the synced data 829,142 bytes, measured by the e2e script. The Firestore limit is 1,048,576 bytes and counts UTF-8 bytes, so the same count of non-Latin text would not fit.
 - `api/guide.mjs` was not changed. Any mode name the server prompt holds still says Planning.
 
+## Fixed after review
+
+- On a phone the plan form ran past the bottom of the screen and Save could not be reached. Modals in Daydream mode now fit the viewport and scroll.
+- A tab opened earlier erased plans and checklist items another tab had added. Two new-build tabs now reread each other's saves (see Known limits for a tab still on the old build).
+- Saving a memory with a photo hung when IndexedDB never answered. Photo store calls give up after 4 seconds and the memory is saved without the photo, with a message.
+- The color editor in Settings changed the saved design invisibly in Daydream mode. It is replaced there by a line saying Daydream uses its own colors.
+- The calendar day list deleted a plan and its checklist in one tap. A plan's row now only opens the plan, whose Delete asks first.
+- Checklist checkboxes and delete buttons have 32x32 tap areas at 700px and below.
+- The calendar key and day list say Plans and Plan in Daydream mode.
+
 ## Also fixed
 
 `window.__mode` is now set before the first `apply()`. Before, the first draw after a reload asked for the mode too early and got School, so Recently deleted was empty after a reload in Work or Planning mode until something redrew it.
 
 ## Verification
 
-`node scripts/e2e-planning.js` drives the new build and the build from commit `dd49bba` on one local origin in headless Chrome. It ran three times with all 137 checks passing. The old-client check was shown to catch a real failure: with `place` moved into `studyflowPlanning`, the plan card read "Big Sur" before the old build wrote and "Location TBD" after.
+`node scripts/e2e-planning.js` drives the new build and the build from commit `dd49bba` on one local origin in headless Chrome. It ran three times with all 173 checks passing. The old-client check was shown to catch a real failure: with `place` moved into `studyflowPlanning`, the plan card read "Big Sur" before the old build wrote and "Location TBD" after.
 
 A signed-in Firebase sync was not exercised. The sync path is covered by replacing every `studyflow*` key with an older and then a newer copy and reloading, which is what `useCloud()` does.
