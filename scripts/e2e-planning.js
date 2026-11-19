@@ -494,6 +494,8 @@ async function main() {
       await A.nav("journal");
       await A.saveMemory({ "#memoryTitle": "Kept" }, true);
       const before = { events: await A.ls("studyflowEvents"), todos: (await A.ls("studyflowPlanning")).todos, memories: await A.ev(`localStorage.getItem("studyflowMemories")`), photos: await A.photos() };
+      const seen = async () => { await A.nav("plan"); const card = await A.ev(`document.querySelector('#planGrid [data-plan-open="${camp.id}"]').innerText`); await A.nav("checklists"); return [card, await A.texts(`#checklistCards [data-list="${camp.id}"] .dd-check-title`)]; };
+      const seenBefore = await seen();
 
       await A.load(OLD);
       await A.nav("plan");
@@ -509,6 +511,8 @@ async function main() {
       const after = { events: await A.ls("studyflowEvents"), todos: (await A.ls("studyflowPlanning")).todos };
       const campAfter = after.events.find((e) => e.id === camp.id);
       check("[5] every plan field survived the old build", same(campAfter, before.events.find((e) => e.id === camp.id)) && campAfter.type === "trip" && campAfter.place === "Big Sur" && campAfter.emoji === "🏖️", JSON.stringify(campAfter));
+      const seenAfter = await seen();
+      check("[5] the plan card and its checklist read the same after the old build wrote", seenBefore[0].includes("Big Sur") && seenBefore[0].includes("Vacation") && seenBefore[0].includes("🏖️") && same(seenBefore[1], ["pack tent"]) && same(seenAfter, seenBefore), `before ${JSON.stringify(seenBefore)} after ${JSON.stringify(seenAfter)}`);
       check("[5] every planId survived", same(after.todos.map((t) => [t.id, t.planId ?? null]), before.todos.map((t) => [t.id, t.planId ?? null])) && after.todos.some((t) => t.planId === camp.id));
       check("[5] memories and the photo survived", (await A.ev(`localStorage.getItem("studyflowMemories")`)) === before.memories && same(await A.photos(), before.photos) && before.photos.length === 1);
       await A.nav("plan");
