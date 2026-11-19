@@ -447,6 +447,7 @@ async function main() {
       check("[3] tapping the chip opens that plan", (await A.count("#planBg.show")) === 1 && (await A.text("#planModalTitle")) === "Today thing");
       await A.press("Escape");
       check("[3] Escape closes the plan", (await A.count("#planBg.show")) === 0);
+      check("[3] a plan's row in the day list has no one-tap Delete", (await A.count("#calDay [data-cal-event-del]")) === 0 && (await A.count("#calDay .task")) === 1, JSON.stringify(await A.ev(`document.querySelector("#calDay").innerText`)));
       await A.click("#calDay [data-plan-open]");
       check("[3] the plan in the day list opens it too", (await A.text("#planModalTitle")) === "Today thing");
       await A.click("#planModal [data-plan-close]");
