@@ -1131,10 +1131,7 @@ const PLAN_TYPES={trip:{label:'Vacation',form:'Vacation / Trip',filter:'Vacation
 const EMOJIS=['🏖️','🎉','🧋','✨','🎂','✈️','🏕️','🍽️','🎬','🌸'],MOODS=['Happy ☀️','Excited ✨','Peaceful 🌿','Grateful ♡','Silly 😄','Adventurous 🗺️','Cozy ☁️'];
 const DD_TITLES={dashboard:['Hey there, planner! ☁️','What are we dreaming up today?'],calendar:['Your calendar 📅','Every plan, right where it belongs.']};
 const str=v=>typeof v==='string'?v:'';
-let P={v:1,todos:[]},E=[],M=[];
-try{const v=JSON.parse(localStorage.getItem(PKEY));if(v&&typeof v==='object'){P.todos=Array.isArray(v.todos)?v.todos:[]}}catch(e){}
-try{const v=JSON.parse(localStorage.getItem(EKEY));if(Array.isArray(v))E=v}catch(e){}
-try{const v=JSON.parse(localStorage.getItem(MKEY));if(Array.isArray(v))M=v.filter(m=>m&&typeof m.id==='string'&&m.id).map(m=>({id:m.id,title:str(m.title),date:str(m.date),mood:str(m.mood),text:str(m.text),tags:Array.isArray(m.tags)?m.tags.filter(t=>typeof t==='string'&&t):[],hasPhoto:m.hasPhoto===true}))}catch(e){}
+let P,E,M;
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
 const psave=()=>save(PKEY,P),esave=()=>save(EKEY,E),msave=()=>save(MKEY,M);
 let on=false,filter='all',openId=null,planForm={id:null,date:''},draftPhoto=null,swept=false;
@@ -1166,7 +1163,12 @@ const listKey=id=>id==null?'':String(id);
 const progress=id=>{const ts=todosOf(id);return `${ts.filter(t=>t.done).length} of ${ts.length} done`};
 // A deleted plan carries its checklist inside its trash entry. An older build restores that entry as an event with the items still inside, so they are taken out again here.
 const unpack=d=>{const {todos,...ev}=d;if(Array.isArray(todos))todos.forEach(t=>{if(t&&!P.todos.some(x=>x.id===t.id))P.todos.push(t)});return ev};
-if(E.some(e=>Array.isArray(e.todos))){E=E.map(e=>Array.isArray(e.todos)?unpack(e):e);esave();psave()}
+function readAll(){P={v:1,todos:[]};E=[];M=[];
+  try{const v=JSON.parse(localStorage.getItem(PKEY));if(v&&typeof v==='object'){P.todos=Array.isArray(v.todos)?v.todos:[]}}catch(e){}
+  try{const v=JSON.parse(localStorage.getItem(EKEY));if(Array.isArray(v))E=v}catch(e){}
+  try{const v=JSON.parse(localStorage.getItem(MKEY));if(Array.isArray(v))M=v.filter(m=>m&&typeof m.id==='string'&&m.id).map(m=>({id:m.id,title:str(m.title),date:str(m.date),mood:str(m.mood),text:str(m.text),tags:Array.isArray(m.tags)?m.tags.filter(t=>typeof t==='string'&&t):[],hasPhoto:m.hasPhoto===true}))}catch(e){}
+  if(E.some(e=>Array.isArray(e.todos))){E=E.map(e=>Array.isArray(e.todos)?unpack(e):e);esave();psave()}}
+readAll();
 
 const cover=e=>`<div class="dd-cover dd-cover-${ptype(e)}"><span class="dd-cover-tag">${safe(PLAN_TYPES[ptype(e)].label)}</span><span aria-hidden="true">${safe(pemoji(e))}</span></div>`;
 const planCard=e=>`<article class="dd-plan" data-plan-open="${e.id}">${cover(e)}<div class="dd-plan-body"><h3><button type="button" class="dd-plan-title">${safe(e.title)}</button></h3><p class="dd-plan-desc">${safe(e.note||'A plan waiting to unfold.')}</p><div class="dd-plan-meta"><span class="dd-date">📅 ${safe(when(e))}</span><span>📍 ${safe(e.place||'Location TBD')}</span></div></div></article>`;
@@ -1308,6 +1310,8 @@ window.sfPlanApply=function(cmds){const mine=[],rest=[];const inPlan=curMode()==
   return {results:[...results,...(other?other.results:[])],undo(){undos.reverse().forEach(u=>u());flush();if(other)other.undo()}}};
 function setOn(v){on=!!v;$('#addCalEvent').textContent=on?'+ New plan':'+ Add event';if(on&&!swept){swept=true;sweepPhotos()}retitle();renderPlan();renderCalendar()}
 const prevRender=render;render=function(){prevRender();renderPlan()};
+// Another tab saved: take its copy, so that this tab's next save does not write back the records it held before.
+addEventListener('storage',e=>{if(e.key!==null&&e.key!==PKEY&&e.key!==EKEY&&e.key!==MKEY)return;readAll();if(mode==='plan-plan'&&planForm.id!=null&&!planOf(planForm.id))closeModal();renderPlan();renderCalendar()});
 renderPlan();
 window.__plan={get P(){return P},get E(){return E},renderPlan,renderDash,setOn,clearPhotos:()=>photoTx('readwrite',s=>s.clear())};
 })();

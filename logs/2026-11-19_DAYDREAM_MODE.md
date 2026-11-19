@@ -29,6 +29,8 @@ While the mode is on, `<html>` carries `data-theme="daydream"` in place of the s
 
 - Photos stay on the device where they were added. Another device shows "This photo is on another device".
 - A tab still running the old build drops a `pmemory` trash entry if Restore is pressed there.
+- Two open tabs of the new build keep each other's saves. Each listens for the browser's `storage` event and rereads `studyflowEvents`, `studyflowPlanning` and `studyflowMemories` when another tab writes them. Rereading writes nothing, so it starts no account sync.
+- A tab opened before the update, still running the old build, holds its own copy of `studyflowEvents` and `studyflowPlanning` and writes the whole key back the next time it saves an event or a to-do. Plans, plan edits and checklist items made in a new tab after that old tab was opened are then lost. This is the app's existing last-writer-wins behavior between tabs, and it ends when the old tab is reloaded or closed. Journal entries and photos are not affected, because the old build never writes `studyflowMemories` or the photo store.
 - The old build shows a plan with no date as "Invalid Date" under its Past and All filters. It does not throw.
 - 200 memories of 4000 ASCII characters make the synced data 829,142 bytes, measured by the e2e script. The Firestore limit is 1,048,576 bytes and counts UTF-8 bytes, so the same count of non-Latin text would not fit.
 - `api/guide.mjs` was not changed. Any mode name the server prompt holds still says Planning.

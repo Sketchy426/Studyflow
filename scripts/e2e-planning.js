@@ -506,6 +506,53 @@ async function main() {
       check("AI summary still lists open to-dos and upcoming plans", (await A.ev(`sfPlanSummary()`)).includes("Buy stamps") && (await A.ev(`sfEventList().join("|")`)).includes("Dentist"));
     });
 
+    await scenario("[tabs] two open tabs keep each other's changes", async () => {
+      await A.fresh(NEW, seedV1);
+      const tab = await (await fetch(`http://127.0.0.1:${port}/json/new?${NEW}`, { method: "PUT" })).json();
+      const B = await attach(tab.webSocketDebuggerUrl);
+      try {
+        await B.ready();
+        await B.nav("checklists");
+        const box = `#checklistCards [data-list=""] form[data-todo-add] input`;
+        await B.ev(`(() => { const i = document.querySelector(${JSON.stringify(box)}); i.focus(); i.value = "half"; i.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+        await B.ev(`(() => { window.__writes = 0; const raw = Storage.prototype.setItem; Storage.prototype.setItem = function (...a) { window.__writes++; return raw.apply(this, a); }; })()`);
+        await A.nav("plan");
+        await A.newPlan({ title: "Shared trip", type: "trip" });
+        const trip = await planByTitle("Shared trip");
+        await A.click(`[data-plan-open="${trip.id}"]`);
+        await A.addTodo("#planModal", trip.id, "pack bag");
+        await A.press("Escape");
+        await sleep(300);
+        check("[tabs] the other tab shows the new plan and its item without a reload", same(await B.texts(`#checklistCards [data-list="${trip.id}"] .dd-check-title`), ["pack bag"]), JSON.stringify(await B.texts("#checklistCards .dd-check-title")));
+        check("[tabs] taking the other tab's changes writes nothing", (await B.ev("window.__writes")) === 0, String(await B.ev("window.__writes")));
+        check("[tabs] a half-typed item in the other tab keeps its text and focus", (await B.value(box)) === "half" && (await B.ev(`document.activeElement === document.querySelector(${JSON.stringify(box)})`)));
+        await B.click('#checklistCards [data-plan-todo="11"]');
+        const todos = (await A.ls("studyflowPlanning")).todos;
+        check("[tabs] ticking a to-do in the tab opened earlier keeps the plan and item the other tab added", !!(await planByTitle("Shared trip")) && todos.some((t) => t.title === "pack bag" && t.planId === trip.id) && todos.find((t) => t.id === 11).done === true, JSON.stringify(todos));
+        await A.reload();
+        await A.nav("checklists");
+        check("[tabs] the first tab sees the tick after a reload", (await A.ev(`document.querySelector('#checklistCards [data-plan-todo="11"]').checked`)) === true);
+        await B.click('#checklistCards [data-list="21"] [data-plan-open]');
+        await A.nav("plan");
+        await A.click('[data-plan-open="21"]');
+        await A.click("#planModal [data-plan-del]");
+        await A.click("#confirmYes");
+        await sleep(300);
+        check("[tabs] a plan deleted in one tab closes its open detail in the other", (await B.count("#planBg.show")) === 0 && (await B.count('#checklistCards [data-list="21"]')) === 0);
+        await B.nav("plan");
+        await B.click('[data-plan-open="22"]');
+        await B.click("#planModal [data-plan-edit]");
+        await A.click('[data-plan-open="22"]');
+        await A.click("#planModal [data-plan-del]");
+        await A.click("#confirmYes");
+        await sleep(300);
+        check("[tabs] a plan deleted in one tab closes its edit form in the other", (await B.count("#modalBg.show")) === 0);
+      } finally {
+        B.close();
+        await fetch(`http://127.0.0.1:${port}/json/close/${tab.id}`);
+      }
+    });
+
     let oldTrashEntry = null;
     await scenario("[5] an old client cannot destroy new data", async () => {
       await A.fresh(NEW, seedV1);
