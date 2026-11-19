@@ -325,6 +325,23 @@ async function main() {
       }
     });
 
+    await scenario("[look] Settings cannot change the saved design in Daydream mode", async () => {
+      await A.fresh(NEW, { studyflowMode: "school", studyflowColors: { accent: "#2fa57c", background: "#e6f7ef", background2: "#dff3ea", cards: "#ffffff", text: "#1f4a3c" } });
+      const saved = await A.ev(`localStorage.getItem("studyflowColors")`);
+      const controls = () => A.ev(`[...document.querySelectorAll("#setPanel-appearance input, #setPanel-appearance button")].filter((e) => e.offsetParent !== null).length`);
+      const panel = () => A.ev(`document.querySelector("#setPanel-appearance").innerText`);
+      await A.setMode("planning");
+      await A.click('[data-set-tab="appearance"]');
+      check("[look] Daydream mode shows no color controls in Settings", (await controls()) === 0, `${await controls()} visible`);
+      check("[look] Appearance says Daydream has its own colors and where to change the design", /Daydream uses its own colors/.test(await panel()) && /School or Work mode/.test(await panel()), await panel());
+      check("[look] studyflowColors is unchanged", (await A.ev(`localStorage.getItem("studyflowColors")`)) === saved);
+      for (const m of ["school", "work"]) {
+        await A.setMode(m);
+        await A.click('[data-set-tab="appearance"]');
+        check(`[look] ${m}: the color controls are back and the Daydream note is gone`, (await controls()) > 5 && !/Daydream/.test(await panel()), `${await controls()} ${await panel()}`);
+      }
+    });
+
     await scenario("[1] existing data", async () => {
       await A.fresh(NEW, seedV1);
       await A.nav("plan");
