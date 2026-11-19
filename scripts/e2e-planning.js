@@ -745,6 +745,13 @@ async function main() {
         const wide = w <= 393 ? "" : await A.ev(`[...document.querySelectorAll("body *")].filter((e) => e.getBoundingClientRect().right > 394).slice(0, 5).map((e) => e.tagName + "#" + e.id + "." + e.className + ":" + Math.round(e.getBoundingClientRect().right)).join(" ")`);
         check(`[8] no horizontal scroll at 393px on ${p}`, w <= 393, `scrollWidth ${w} ${wide}`);
       }
+      await A.nav("checklists");
+      // Every point of a 32x32 square around the control must land on it or on its label.
+      const hitArea = (sel, centered) => A.ev(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); el.scrollIntoView({ block: "center" }); const b = el.getBoundingClientRect(), own = el.closest("label") || el, cy = b.top + b.height / 2, x0 = ${centered} ? b.left + b.width / 2 - 15.5 : b.left; let miss = 0; for (let x = x0; x <= x0 + 31; x += 3.1) for (let y = cy - 15.5; y <= cy + 15.5; y += 3.1) { const h = document.elementFromPoint(x, y); if (!h || !own.contains(h)) miss++; } return { w: Math.round(b.width), h: Math.round(b.height), miss }; })()`);
+      const box = await hitArea('#checklistCards [data-list=""] [data-plan-todo]', false);
+      check("[8] a checklist checkbox has a 32x32 hit area at 393px and still looks small", box.miss === 0 && box.w < 24, JSON.stringify(box));
+      const del = await hitArea('#checklistCards [data-list=""] [data-plan-todo-del]', true);
+      check("[8] a checklist delete button has a 32x32 hit area at 393px", del.miss === 0, JSON.stringify(del));
       await A.nav("plan");
       await A.click('[data-plan-open="21"]');
       check("[8] the plan detail fits the phone", await A.ev(`(() => { const b = document.querySelector("#planModal").getBoundingClientRect(); return b.left >= 0 && b.right <= 393 && b.height <= 852; })()`));
