@@ -72,7 +72,11 @@ async function attach(wsUrl) {
   const mouse = (type, p, buttons) => send("Input.dispatchMouseEvent", { type, x: p.x, y: p.y, button: type === "mouseMoved" && !buttons ? "none" : "left", buttons, clickCount: 1 });
   const page = {
     send, ev, close: () => ws.close(),
-    click: async (sel, n = 0) => { await ev(`${q(sel, n)}.click()`); await sleep(120); },
+    click: async (sel, n = 0) => {
+      if (!(await ev(`!!${q(sel, n)}`))) throw new Error(`nothing to click: ${sel}[${n}]`);
+      await ev(`${q(sel, n)}.click()`);
+      await sleep(120);
+    },
     text: (sel, n = 0) => ev(`${q(sel, n)}?.textContent.trim() ?? null`),
     texts: (sel) => ev(`[...document.querySelectorAll(${JSON.stringify(sel)})].map((e) => e.textContent.trim())`),
     count: (sel) => ev(`document.querySelectorAll(${JSON.stringify(sel)}).length`),
@@ -452,7 +456,7 @@ async function main() {
       check("[4] restore from Recently deleted brings the memory back with its photo", (await A.ls("studyflowMemories"))[0]?.id === mem.id && (await A.ev(`!!document.querySelector("#memoryGrid img[src^='blob:']")`)));
       await A.nav("dashboard");
       await sleep(200);
-      check("[4] dashboard shows the latest memory", (await A.count("#dashMemories .dd-memory")) === 1);
+      check("[4] dashboard shows the latest memory with its photo", (await A.count("#dashMemories .dd-memory")) === 1 && (await A.ev(`!!document.querySelector("#dashMemories img[src^='blob:']")`)));
     });
 
     await scenario("checklists page", async () => {
