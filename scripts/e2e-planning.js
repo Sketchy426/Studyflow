@@ -397,6 +397,8 @@ async function main() {
       await A.click('[data-plan-open="81"] .dd-plan-title');
       check("[icons] no emoji in the plan detail", (await found()) === "", await found());
       await A.click("[data-plan-edit]");
+      const hues = await A.ev(`[...new Set([...document.querySelectorAll("#modalFields [data-icon] svg")].map((s) => getComputedStyle(s).color))]`);
+      check("[icons] each of the twelve icons has its own color", hues.length === 12, JSON.stringify(hues));
       check("[icons] the plan form offers twelve icons and no emoji", (await A.count("#modalFields [data-icon] svg")) === 12 && (await found()) === "", await found());
       await A.submit("#modalForm");
       check("[icons] no emoji after saving a plan", (await found()) === "", await found());
@@ -405,6 +407,8 @@ async function main() {
       await A.saveMemory({ "#memoryTitle": "New one", "#memoryText": "Hello" }, false);
       check("[icons] no emoji after saving a memory", (await found()) === "", await found());
       await A.nav("dashboard");
+      const tileHues = await A.ev(`[...new Set([...document.querySelectorAll(".dd-stat-icon")].map((s) => getComputedStyle(s).color + getComputedStyle(s).backgroundColor))]`);
+      check("[icons] the four dashboard tiles each have their own icon color and tint", tileHues.length === 4, JSON.stringify(tileHues));
       check("[icons] the dashboard tiles, hero and covers use drawn icons", (await A.count(".dd-stat-icon svg")) === 4 && (await A.count(".dd-hero-art svg")) === 1 && (await A.count("#dashPlanGrid .dd-cover svg")) === 1);
     });
 
