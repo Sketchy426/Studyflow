@@ -384,6 +384,30 @@ async function main() {
       check("[color] School keeps its own color and editable calendar colors", school.blue !== "#e07aa5" && school.theme !== "daydream" && school.editable, JSON.stringify(school));
     });
 
+    await scenario("[icons] Daydream shows no emojis", async () => {
+      const today = await A.ev(`(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })()`);
+      await A.fresh(NEW, { ...planning, studyflowEvents: [{ id: 81, title: "Old beach trip", date: today, start: "", end: "", note: "", mode: "planning", type: "trip", place: "Pier", emoji: "🏖️" }], studyflowPlanning: { v: 1, todos: [{ id: 82, title: "Sunscreen", due: today, priority: "Medium", note: "", done: false, planId: 81 }] }, studyflowMemories: [{ id: "m1", title: "Old memory", date: today, mood: "Happy ☀️", text: "Nice day", tags: ["sun"], hasPhoto: false }] });
+      const found = () => A.ev(`(() => { const css = [":before", ":after"].flatMap((p) => [...document.querySelectorAll("main *, aside *")].filter((e) => e.getClientRects().length).map((e) => getComputedStyle(e, p).content)).filter((c) => c && c !== "none" && c !== "normal").join(" "); const text = document.querySelector(".app").innerText + " " + document.querySelector("#modalBg").innerText + " " + (document.querySelector(".toast")?.innerText || "") + " " + css; return [...new Set(text.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{25A0}-\u{25FF}\u{FE0F}]/gu) || [])].join(" "); })()`);
+      for (const p of ["dashboard", "plan", "calendar", "journal", "checklists", "settings", "assistant"]) {
+        await A.nav(p);
+        check(`[icons] no emoji on ${p}`, (await found()) === "", await found());
+      }
+      await A.nav("plan");
+      check("[icons] a plan saved with an emoji now shows its type's icon", (await A.count('#planGrid [data-plan-open="81"] .dd-cover svg.dd-ico')) === 1 && !/🏖/.test(await A.text('[data-plan-open="81"]')));
+      await A.click('[data-plan-open="81"] .dd-plan-title');
+      check("[icons] no emoji in the plan detail", (await found()) === "", await found());
+      await A.click("[data-plan-edit]");
+      check("[icons] the plan form offers twelve icons and no emoji", (await A.count("#modalFields [data-icon] svg")) === 12 && (await found()) === "", await found());
+      await A.submit("#modalForm");
+      check("[icons] no emoji after saving a plan", (await found()) === "", await found());
+      await A.nav("journal");
+      check("[icons] an old mood shows as a plain word", /Happy/.test(await A.text("#memoryGrid")) && (await A.texts("#memoryMood option")).includes("Happy"), await A.text("#memoryGrid"));
+      await A.saveMemory({ "#memoryTitle": "New one", "#memoryText": "Hello" }, false);
+      check("[icons] no emoji after saving a memory", (await found()) === "", await found());
+      await A.nav("dashboard");
+      check("[icons] the dashboard tiles, hero and covers use drawn icons", (await A.count(".dd-stat-icon svg")) === 4 && (await A.count(".dd-hero-art svg")) === 1 && (await A.count("#dashPlanGrid .dd-cover svg")) === 1);
+    });
+
     await scenario("[look] Settings cannot change the saved design in Daydream mode", async () => {
       await A.fresh(NEW, { studyflowMode: "school", studyflowColors: { accent: "#2fa57c", background: "#e6f7ef", background2: "#dff3ea", cards: "#ffffff", text: "#1f4a3c" } });
       const saved = await A.ev(`localStorage.getItem("studyflowColors")`);
@@ -421,17 +445,17 @@ async function main() {
       await A.fresh(NEW, seedV1);
       await A.nav("plan");
       await A.click("#addPlan");
-      check("[2] plan form has the Daydream fields", same(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`), ["title", "type", "date", "start", "end", "place", "note", "emoji"]), JSON.stringify(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`)));
+      check("[2] plan form has the Daydream fields", same(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`), ["title", "type", "date", "start", "end", "place", "note", "icon"]), JSON.stringify(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`)));
       await A.setValue('#modalForm [name="title"]', "<b>Ski trip</b>");
       await A.setValue('#modalForm [name="type"]', "event");
-      check("[2] emoji follows the type default", (await A.value('#modalForm [name="emoji"]')) === "🎉");
-      await A.click('#modalFields [data-emoji="🎬"]');
+      check("[2] icon follows the type default", (await A.value('#modalForm [name="icon"]')) === "balloon");
+      await A.click('#modalFields [data-icon="film"]');
       await A.setValue('#modalForm [name="date"]', await inDays(5));
       await A.setValue('#modalForm [name="place"]', "Tahoe");
       await A.submit("#modalForm");
       const ski = await planByTitle("<b>Ski trip</b>");
-      check("[2] plan is saved as a planning event with type, place and emoji", ski && ski.mode === "planning" && ski.type === "event" && ski.place === "Tahoe" && ski.emoji === "🎬" && ski.date === (await inDays(5)), JSON.stringify(ski));
-      check("[2] card shows the escaped title, emoji and type tag", (await planTitles()).includes("<b>Ski trip</b>") && (await A.count("#planGrid b")) === 0 && (await A.text(`[data-plan-open="${ski.id}"] .dd-cover`)).includes("🎬") && (await A.text(`[data-plan-open="${ski.id}"] .dd-cover-tag`)) === "Event");
+      check("[2] plan is saved as a planning event with type, place and icon", ski && ski.mode === "planning" && ski.type === "event" && ski.place === "Tahoe" && ski.icon === "film" && ski.date === (await inDays(5)), JSON.stringify(ski));
+      check("[2] card shows the escaped title, icon and type tag", (await planTitles()).includes("<b>Ski trip</b>") && (await A.count("#planGrid b")) === 0 && (await A.count(`#planGrid [data-plan-open="${ski.id}"] .dd-cover svg.dd-ico`)) === 1 && (await A.text(`[data-plan-open="${ski.id}"] .dd-cover-tag`)) === "Event");
 
       await A.click('#planFilter [data-plan-type="event"]');
       check("[2] Events filter shows untyped old events and the new event", same(await planTitles(), ["Dentist", "<b>Ski trip</b>", "Legacy picnic"]), JSON.stringify(await planTitles()));
@@ -451,12 +475,12 @@ async function main() {
       await A.ev(`localStorage.removeItem("studyflowTrash")`);
 
       await A.click("#planModal [data-plan-edit]");
-      check("[2] edit form is prefilled", (await A.value('#modalForm [name="title"]')) === "<b>Ski trip</b>" && (await A.value('#modalForm [name="place"]')) === "Tahoe" && (await A.value('#modalForm [name="emoji"]')) === "🎬");
+      check("[2] edit form is prefilled", (await A.value('#modalForm [name="title"]')) === "<b>Ski trip</b>" && (await A.value('#modalForm [name="place"]')) === "Tahoe" && (await A.value('#modalForm [name="icon"]')) === "film");
       await A.setValue('#modalForm [name="title"]', "Ski weekend");
       await A.setValue('#modalForm [name="note"]', "Bring cocoa");
       await A.submit("#modalForm");
       const edited = await planByTitle("Ski weekend");
-      check("[2] edit changes the same record and keeps its other fields", edited && edited.id === ski.id && edited.note === "Bring cocoa" && edited.type === "event" && edited.emoji === "🎬" && (await A.ls("studyflowEvents")).length === 5, JSON.stringify(edited));
+      check("[2] edit changes the same record and keeps its other fields", edited && edited.id === ski.id && edited.note === "Bring cocoa" && edited.type === "event" && edited.icon === "film" && (await A.ls("studyflowEvents")).length === 5, JSON.stringify(edited));
 
       await A.click(`#planGrid [data-plan-open="${ski.id}"]`);
       await A.click("#planModal [data-plan-del]");
@@ -502,7 +526,7 @@ async function main() {
       const plan = await planByTitle("Today thing");
       await A.nav("calendar");
       const chip = await A.ev(`[...document.querySelectorAll(".day.today .chip")].map((c) => [c.textContent, c.className])`);
-      check("[3] today's cell has the plan's chip with its emoji, in the event color", chip.length === 1 && chip[0][0].startsWith("🧋 Today thing") && chip[0][1].includes("k-event"), JSON.stringify(chip));
+      check("[3] today's cell has the plan's chip, in the event color", chip.length === 1 && chip[0][0].startsWith("Today thing") && chip[0][1].includes("k-event"), JSON.stringify(chip));
       await A.tap(".day.today .chip");
       check("[3] tapping the chip opens that plan", (await A.count("#planBg.show")) === 1 && (await A.text("#planModalTitle")) === "Today thing");
       await A.press("Escape");
@@ -520,7 +544,7 @@ async function main() {
       check("[3] the day button opens the plan form with that day preset", (await A.text("#modalTitle")) === "Create a new plan" && (await A.value('#modalForm [name="date"]')) === other, `${await A.text("#modalTitle")} ${await A.value('#modalForm [name="date"]')}`);
       await A.click("#cancel");
       await A.click("#addCalEvent");
-      check("[3] the calendar's add button opens the plan form too", (await A.count('#modalForm [name="emoji"]')) === 1 && (await A.value('#modalForm [name="date"]')) === other);
+      check("[3] the calendar's add button opens the plan form too", (await A.count('#modalForm [name="icon"]')) === 1 && (await A.value('#modalForm [name="date"]')) === other);
       await A.setValue('#modalForm [name="title"]', "From calendar");
       await A.submit("#modalForm");
       check("[3] a plan made from the calendar is a plan on that day", (await planByTitle("From calendar"))?.date === other && (await A.text(`.day[data-day="${other}"] .chip`)).includes("From calendar") && plan.type === "outing");
@@ -699,9 +723,9 @@ async function main() {
       await A.load(NEW);
       const after = { events: await A.ls("studyflowEvents"), todos: (await A.ls("studyflowPlanning")).todos };
       const campAfter = after.events.find((e) => e.id === camp.id);
-      check("[5] every plan field survived the old build", same(campAfter, before.events.find((e) => e.id === camp.id)) && campAfter.type === "trip" && campAfter.place === "Big Sur" && campAfter.emoji === "🏖️", JSON.stringify(campAfter));
+      check("[5] every plan field survived the old build", same(campAfter, before.events.find((e) => e.id === camp.id)) && campAfter.type === "trip" && campAfter.place === "Big Sur" && campAfter.icon === "plane", JSON.stringify(campAfter));
       const seenAfter = await seen();
-      check("[5] the plan card and its checklist read the same after the old build wrote", seenBefore[0].includes("Big Sur") && seenBefore[0].includes("Vacation") && seenBefore[0].includes("🏖️") && same(seenBefore[1], ["pack tent"]) && same(seenAfter, seenBefore), `before ${JSON.stringify(seenBefore)} after ${JSON.stringify(seenAfter)}`);
+      check("[5] the plan card and its checklist read the same after the old build wrote", seenBefore[0].includes("Big Sur") && seenBefore[0].includes("Vacation") && same(seenBefore[1], ["pack tent"]) && same(seenAfter, seenBefore), `before ${JSON.stringify(seenBefore)} after ${JSON.stringify(seenAfter)}`);
       check("[5] every planId survived", same(after.todos.map((t) => [t.id, t.planId ?? null]), before.todos.map((t) => [t.id, t.planId ?? null])) && after.todos.some((t) => t.planId === camp.id));
       check("[5] memories and the photo survived", (await A.ev(`localStorage.getItem("studyflowMemories")`)) === before.memories && same(await A.photos(), before.photos) && before.photos.length === 1);
       await A.nav("plan");
