@@ -303,6 +303,12 @@ async function main() {
     await scenario("[name] the mode is called Daydream", async () => {
       await A.fresh(NEW, planning);
       check("[name] mode button reads Daydream", (await A.text('#modeSeg [data-mode="planning"]')) === "Daydream");
+      check("[name] the name at the top reads Daydream", (await A.text(".brand b")) === "Daydream");
+      await A.setMode("school");
+      check("[name] the name at the top reads StudyFlow in School", (await A.text(".brand b")) === "StudyFlow");
+      await A.setMode("work");
+      check("[name] the name at the top reads StudyFlow in Work", (await A.text(".brand b")) === "StudyFlow");
+      await A.setMode("planning");
       check("[name] eyebrow says Daydream", /DAYDREAM/.test(await A.text("#eyebrow")), await A.text("#eyebrow"));
       const nav = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.textContent.trim())`);
       check("[name] nav is Dashboard, Calendar, My Plans, Journal, Checklists, AI, Settings", same([...nav].sort(), ["AI", "Calendar", "Checklists", "Dashboard", "Journal", "My Plans", "Settings"]), JSON.stringify(nav));
@@ -478,6 +484,26 @@ async function main() {
       await A.setValue('#modalForm [name="title"]', "From calendar");
       await A.submit("#modalForm");
       check("[3] a plan made from the calendar is a plan on that day", (await planByTitle("From calendar"))?.date === other && (await A.text(`.day[data-day="${other}"] .chip`)).includes("From calendar") && plan.type === "outing");
+    });
+
+    await scenario("[print] journal print", async () => {
+      await A.fresh(NEW, planning);
+      await A.nav("journal");
+      await A.ev(`window.__prints = 0; window.print = () => { window.__prints++; }`);
+      await A.click("#printJournal");
+      check("[print] an empty journal does not print", (await A.ev(`window.__prints`)) === 0 && !(await A.ev(`document.documentElement.classList.contains("print-journal")`)));
+      await A.saveMemory({ "#memoryTitle": "Beach day", "#memoryText": "Sand everywhere" }, true);
+      await A.saveMemory({ "#memoryTitle": "Movie night", "#memoryText": "Popcorn" }, false);
+      await A.click("#printJournal");
+      check("[print] the button opens the print dialog once", (await A.ev(`window.__prints`)) === 1);
+      await A.send("Emulation.setEmulatedMedia", { media: "print" });
+      const shown = await A.ev(`(() => { const v = (s) => [...document.querySelectorAll(s)].some((e) => e.getClientRects().length > 0); return { memories: [...document.querySelectorAll("#memoryGrid .dd-memory h3")].filter((e) => e.getClientRects().length).map((e) => e.textContent), photo: v("#memoryGrid img"), text: v(".dd-memory-text"), aside: v("aside"), form: v("#memoryForm"), del: v(".dd-memory-del"), button: v("#printJournal"), other: v("main > *:not(#page-journal)") }; })()`);
+      check("[print] the printed page shows every memory with its photo and text", same([...shown.memories].sort(), ["Beach day", "Movie night"]) && shown.photo && shown.text, JSON.stringify(shown));
+      check("[print] the printed page leaves out the sidebar, the form and the buttons", !shown.aside && !shown.form && !shown.del && !shown.button && !shown.other, JSON.stringify(shown));
+      if (process.env.SHOTS) { const pdf = await A.send("Page.printToPDF", { printBackground: true }); require("fs").writeFileSync(require("path").join(process.env.SHOTS, "journal-print.pdf"), Buffer.from(pdf.result.data, "base64")); }
+      await A.send("Emulation.setEmulatedMedia", { media: "" });
+      await A.ev(`dispatchEvent(new Event("afterprint"))`);
+      check("[print] the screen goes back to normal after printing", (await A.ev(`!document.documentElement.classList.contains("print-journal") && document.querySelector("aside").getClientRects().length > 0`)));
     });
 
     await scenario("[4] journal with a photo", async () => {
