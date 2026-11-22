@@ -345,6 +345,40 @@ async function main() {
       }
     });
 
+    await scenario("[color] Daydream colors and the calendar", async () => {
+      const today = await A.ev(`(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })()`);
+      await A.fresh(NEW, { ...planning, studyflowEvents: [{ id: 71, title: "Picnic", date: today, start: "", end: "", note: "", mode: "planning", type: "outing", place: "", emoji: "🧺" }], studyflowPlanning: { v: 1, todos: [{ id: 72, title: "Pack basket", due: today, priority: "Medium", note: "", done: false }] } });
+      const look = () => A.ev(`(() => { const h = getComputedStyle(document.documentElement); const k = (s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).getPropertyValue("--k").trim() : null; }; return { dd: document.documentElement.dataset.dd, blue: h.getPropertyValue("--blue").trim(), planChip: k(".day.today .chip.k-event"), todoChip: k(".day.today .chip.k-plan"), pressed: [...document.querySelectorAll('[data-dd-color][aria-pressed="true"]')].map((b) => b.dataset.ddColor), patterns: getComputedStyle(document.body).backgroundImage, font: getComputedStyle(document.body).fontFamily }; })()`);
+      await A.nav("calendar");
+      const first = await look();
+      check("[color] Daydream starts lavender and the calendar wears it", first.dd === "lavender" && first.blue === "#6f83df" && first.planChip === "#6f83df" && first.todoChip === "#536dcf", JSON.stringify(first));
+      const want = { pink: ["#e07aa5", "#c2527f"], sky: ["#4f9fe0", "#2c7cc0"], mint: ["#45b394", "#2a8c70"], peach: ["#ee9460", "#c96d38"], lavender: ["#6f83df", "#536dcf"] };
+      for (const [name, [accent, deep]] of Object.entries(want)) {
+        await A.nav("settings");
+        await A.click('[data-set-tab="appearance"]');
+        await A.click(`[data-dd-color="${name}"]`);
+        await A.nav("calendar");
+        const now = await look();
+        check(`[color] ${name}: the page and the calendar chips take the color`, now.dd === name && now.blue === accent && now.planChip === accent && now.todoChip === deep && same(now.pressed, [name]), JSON.stringify(now));
+        check(`[color] ${name}: only the color changes, with no pattern and the same font`, now.patterns === first.patterns && now.font === first.font, JSON.stringify(now));
+      }
+      await A.nav("settings");
+      await A.click('[data-set-tab="appearance"]');
+      await A.click('[data-dd-color="pink"]');
+      const hero = async () => { await A.nav("dashboard"); return A.ev(`getComputedStyle(document.querySelector(".dd-hero")).backgroundImage`); };
+      if (SHOTS) { await A.nav("dashboard"); await A.shot(path.join(SHOTS, "daydream-pink-dashboard.png"), 1280, 900); await A.nav("calendar"); await A.shot(path.join(SHOTS, "daydream-pink-calendar.png"), 1280, 900); await A.nav("settings"); await A.click('[data-set-tab="appearance"]'); await A.shot(path.join(SHOTS, "daydream-color-picker.png"), 1280, 900); }
+      check("[color] the dashboard hero takes the color", /rgb\(22[0-9], 1[0-9][0-9], 1[0-9][0-9]\)/.test(await hero()), await hero());
+      await A.send("Page.reload");
+      await sleep(900);
+      await A.nav("calendar");
+      const again = await look();
+      check("[color] the color is remembered after a reload", again.dd === "pink" && again.blue === "#e07aa5" && again.planChip === "#e07aa5", JSON.stringify(again));
+      check("[color] the calendar key swatches cannot be edited in Daydream", await A.ev(`[...document.querySelectorAll("[data-kcolor]")].filter((i) => i.offsetParent !== null).every((i) => i.disabled)`));
+      await A.setMode("school");
+      const school = await A.ev(`({ blue: getComputedStyle(document.documentElement).getPropertyValue("--blue").trim(), theme: document.documentElement.dataset.theme ?? null, editable: [...document.querySelectorAll("[data-kcolor]")].every((i) => !i.disabled) })`);
+      check("[color] School keeps its own color and editable calendar colors", school.blue !== "#e07aa5" && school.theme !== "daydream" && school.editable, JSON.stringify(school));
+    });
+
     await scenario("[look] Settings cannot change the saved design in Daydream mode", async () => {
       await A.fresh(NEW, { studyflowMode: "school", studyflowColors: { accent: "#2fa57c", background: "#e6f7ef", background2: "#dff3ea", cards: "#ffffff", text: "#1f4a3c" } });
       const saved = await A.ev(`localStorage.getItem("studyflowColors")`);
@@ -352,8 +386,9 @@ async function main() {
       const panel = () => A.ev(`document.querySelector("#setPanel-appearance").innerText`);
       await A.setMode("planning");
       await A.click('[data-set-tab="appearance"]');
-      check("[look] Daydream mode shows no color controls in Settings", (await controls()) === 0, `${await controls()} visible`);
-      check("[look] Appearance says Daydream has its own colors and where to change the design", /Daydream uses its own colors/.test(await panel()) && /School or Work mode/.test(await panel()), await panel());
+      check("[look] Daydream mode shows only its five color buttons in Settings", (await controls()) === 5 && (await A.count("#setPanel-appearance [data-dd-color]")) === 5, `${await controls()} visible`);
+      check("[look] Appearance says the Daydream color leaves the School and Work design alone", /Pick a color for Daydream/.test(await panel()) && /School and Work design is not changed/.test(await panel()), await panel());
+      await A.click('[data-dd-color="mint"]');
       check("[look] studyflowColors is unchanged", (await A.ev(`localStorage.getItem("studyflowColors")`)) === saved);
       for (const m of ["school", "work"]) {
         await A.setMode(m);
