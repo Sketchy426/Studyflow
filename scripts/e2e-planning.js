@@ -348,11 +348,13 @@ async function main() {
     await scenario("[color] Daydream colors and the calendar", async () => {
       const today = await A.ev(`(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })()`);
       await A.fresh(NEW, { ...planning, studyflowEvents: [{ id: 71, title: "Picnic", date: today, start: "", end: "", note: "", mode: "planning", type: "outing", place: "", emoji: "🧺" }], studyflowPlanning: { v: 1, todos: [{ id: 72, title: "Pack basket", due: today, priority: "Medium", note: "", done: false }] } });
-      const look = () => A.ev(`(() => { const h = getComputedStyle(document.documentElement); const k = (s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).getPropertyValue("--k").trim() : null; }; return { dd: document.documentElement.dataset.dd, blue: h.getPropertyValue("--blue").trim(), planChip: k(".day.today .chip.k-event"), todoChip: k(".day.today .chip.k-plan"), pressed: [...document.querySelectorAll('[data-dd-color][aria-pressed="true"]')].map((b) => b.dataset.ddColor), patterns: getComputedStyle(document.body).backgroundImage, font: getComputedStyle(document.body).fontFamily }; })()`);
+      const look = () => A.ev(`(() => { const h = getComputedStyle(document.documentElement); const k = (s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).getPropertyValue("--k").trim() : null; }; return { dd: document.documentElement.dataset.dd, blue: h.getPropertyValue("--blue").trim(), planChip: k(".day.today .chip.k-event"), todoChip: k(".day.today .chip.k-plan"), pressed: [...document.querySelectorAll('[data-dd-color][aria-pressed="true"]')].map((b) => b.dataset.ddColor), patterns: getComputedStyle(document.body).backgroundImage, font: getComputedStyle(document.body).fontFamily, bg: getComputedStyle(document.body).backgroundColor }; })()`);
       await A.nav("calendar");
       const first = await look();
       check("[color] Daydream starts lavender and the calendar wears it", first.dd === "lavender" && first.blue === "#6f83df" && first.planChip === "#6f83df" && first.todoChip === "#536dcf", JSON.stringify(first));
       const want = { pink: ["#e07aa5", "#c2527f"], sky: ["#4f9fe0", "#2c7cc0"], mint: ["#45b394", "#2a8c70"], peach: ["#ee9460", "#c96d38"], lavender: ["#6f83df", "#536dcf"] };
+      const tint = (accent) => "rgb(" + [1, 3, 5].map((i) => Math.round(parseInt(accent.slice(i, i + 2), 16) * 0.09 + 255 * 0.91)).join(", ") + ")";
+      const seen = new Set();
       for (const [name, [accent, deep]] of Object.entries(want)) {
         await A.nav("settings");
         await A.click('[data-set-tab="appearance"]');
@@ -360,8 +362,11 @@ async function main() {
         await A.nav("calendar");
         const now = await look();
         check(`[color] ${name}: the page and the calendar chips take the color`, now.dd === name && now.blue === accent && now.planChip === accent && now.todoChip === deep && same(now.pressed, [name]), JSON.stringify(now));
+        seen.add(now.bg);
+        check(`[color] ${name}: the page background is a light tint of the color`, now.bg === tint(accent), `${now.bg} want ${tint(accent)}`);
         check(`[color] ${name}: only the color changes, with no pattern and the same font`, now.patterns === first.patterns && now.font === first.font, JSON.stringify(now));
       }
+      check("[color] each color has its own background", seen.size === 5, [...seen].join(" | "));
       await A.nav("settings");
       await A.click('[data-set-tab="appearance"]');
       await A.click('[data-dd-color="pink"]');
