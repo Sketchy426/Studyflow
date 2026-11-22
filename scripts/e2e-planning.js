@@ -305,7 +305,7 @@ async function main() {
       check("[name] mode button reads Daydream", (await A.text('#modeSeg [data-mode="planning"]')) === "Daydream");
       check("[name] eyebrow says Daydream", /DAYDREAM/.test(await A.text("#eyebrow")), await A.text("#eyebrow"));
       const nav = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.textContent.trim())`);
-      check("[name] nav is Dashboard, Calendar, Focus Timer, My Plans, Journal, Checklists, AI, Settings", same([...nav].sort(), ["AI", "Calendar", "Checklists", "Dashboard", "Focus Timer", "Journal", "My Plans", "Settings"]), JSON.stringify(nav));
+      check("[name] nav is Dashboard, Calendar, My Plans, Journal, Checklists, AI, Settings", same([...nav].sort(), ["AI", "Calendar", "Checklists", "Dashboard", "Journal", "My Plans", "Settings"]), JSON.stringify(nav));
       const visible = await A.ev(`document.body.innerText`);
       for (const p of ["dashboard", "plan", "calendar", "journal", "checklists", "settings", "assistant"]) {
         await A.nav(p);
@@ -554,8 +554,7 @@ async function main() {
       await A.submit("#modalForm");
       await A.nav("calendar");
       check("a to-do with a due date still shows on the calendar", (await A.texts(".day.today .chip.k-plan")).includes("Renew pass"), JSON.stringify(await A.texts(".day.today .chip")));
-      await A.nav("focus");
-      check("Focus Timer still lists open to-dos", (await A.texts("#focusTask option")).includes("Buy stamps"));
+      check("Daydream has no Focus Timer in the sidebar or in Settings", await A.ev(`document.querySelector('.nav[data-page="focus"]').hidden && document.querySelector("#featuresCard").offsetParent === null`));
       check("AI summary still lists open to-dos and upcoming plans", (await A.ev(`sfPlanSummary()`)).includes("Buy stamps") && (await A.ev(`sfEventList().join("|")`)).includes("Dentist"));
     });
 
@@ -782,8 +781,8 @@ async function main() {
       await A.saveMemory({ "#memoryTitle": "Phone" }, true);
       await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
       await sleep(300);
-      check("[8] eight nav items at 393px", (await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => b.offsetParent !== null).length`)) === 8);
-      for (const p of ["dashboard", "plan", "calendar", "journal", "checklists", "focus", "settings"]) {
+      check("[8] seven nav items at 393px", (await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => b.offsetParent !== null).length`)) === 7);
+      for (const p of ["dashboard", "plan", "calendar", "journal", "checklists", "settings"]) {
         await A.nav(p);
         const w = await A.ev(`document.documentElement.scrollWidth`);
         const wide = w <= 393 ? "" : await A.ev(`[...document.querySelectorAll("body *")].filter((e) => e.getBoundingClientRect().right > 394).slice(0, 5).map((e) => e.tagName + "#" + e.id + "." + e.className + ":" + Math.round(e.getBoundingClientRect().right)).join(" ")`);
