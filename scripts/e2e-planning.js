@@ -206,11 +206,12 @@ async function eventProbe(A, url, mode, seed) {
   const out = {};
   out.first = { chips: await A.texts(".day.today .chip"), trash: await A.texts("#trashList h4") };
   const pages = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.dataset.page)`);
-  out.nav = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.textContent.trim())`);
+  pages.sort();
+  out.nav = pages;
   out.titles = [];
   for (const p of pages) {
     await A.nav(p);
-    out.titles.push([await A.text("#eyebrow"), await A.text("#pageTitle"), await A.text("#pageSubtitle")]);
+    out.titles.push([p, await A.text("#eyebrow"), await A.text("#pageTitle"), await A.text("#pageSubtitle")]);
   }
   await A.nav("dashboard");
   out.tiles = await A.ev(`["#dashStats", "#dashWorkStats", "#dashPlanStats", "#dashColumns", "#dashWork", "#dashPlan"].map((s) => { const e = document.querySelector(s); return e.offsetParent === null ? null : e.innerText; })`);
@@ -322,7 +323,7 @@ async function main() {
       await A.setMode("planning");
       check("[name] eyebrow says DayDream", /DAYDREAM/.test(await A.text("#eyebrow")), await A.text("#eyebrow"));
       const nav = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.textContent.trim())`);
-      check("[name] nav is Dashboard, Calendar, My Plans, Journal, Checklists, AI, Settings", same([...nav].sort(), ["AI", "Calendar", "Checklists", "Dashboard", "Journal", "My Plans", "Settings"]), JSON.stringify(nav));
+      check("[name] nav is Home, My Plans, Calendar, Checklists, Digital Journal, AI, Settings", same([...nav].sort(), ["AI", "Calendar", "Checklists", "Digital Journal", "Home", "My Plans", "Settings"]), JSON.stringify(nav));
       const visible = await A.ev(`document.body.innerText`);
       for (const p of ["dashboard", "plan", "calendar", "journal", "checklists", "settings", "assistant"]) {
         await A.nav(p);
@@ -535,6 +536,37 @@ async function main() {
       check("[safety] the account size is measured in bytes and names the biggest part", r.size.total === 13 + 10 + 14 + 1000 && r.size.big === "studyflowNotes", JSON.stringify(r.size));
       await A.nav("settings");
       check("[safety] the page still works after the probe", (await A.count(".page.active")) === 1);
+    });
+
+    await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
+      const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
+      await A.fresh(NEW, {});
+      check("[shell] StudyFlow groups its pages under four labels", same(await groups(), [["OVERVIEW", ["Dashboard", "Calendar", "All Assignments"]], ["ACADEMICS", ["My Classes", "Grade Tracker", "Flashcards"]], ["PRODUCTIVITY", ["Study Planner", "Focus Timer"]], ["OTHER", ["AI Study Assistant", "Settings"]]]), JSON.stringify(await groups()));
+      check("[shell] the switcher shows the current workspace", same(await A.ev(`[...document.querySelectorAll("#wsSwitch button")].map((b) => [b.textContent, b.getAttribute("aria-pressed")])`), [["School", "true"], ["Work", "false"], ["DayDream", "false"]]));
+      await A.click('#wsSwitch [data-mode="planning"]');
+      check("[shell] the switcher opens DayDream and saves it", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "planning" && (await A.text(".brand b")) === "DayDream");
+      check("[shell] DayDream groups its pages", same(await groups(), [["YOUR SPACE", ["Home", "My Plans", "Calendar"]], ["ORGANIZATION", ["Checklists"]], ["MEMORIES", ["Digital Journal"]], ["MORE", ["AI", "Settings"]]]), JSON.stringify(await groups()));
+      await A.nav("settings");
+      check("[shell] the Settings switch agrees with the sidebar one", (await A.ev(`document.querySelector('#modeSeg [data-mode="planning"]').classList.contains("on")`)) === true);
+      await A.click('#wsSwitch [data-mode="work"]');
+      check("[shell] Work groups its pages", same(await groups(), [["OVERVIEW", ["Dashboard", "Calendar"]], ["WORK", ["Work"]], ["OTHER", ["AI", "Settings"]]]), JSON.stringify(await groups()));
+      await A.click('#wsSwitch [data-mode="school"]');
+      for (const [w, h] of [[393, 852], [820, 1180], [1280, 900]]) {
+        await A.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: w < 700 });
+        await sleep(250);
+        const fit = await A.ev(`(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(); const sw = r("#wsSwitch"), nav = r("#nav"); return { scroll: document.documentElement.scrollWidth - innerWidth, sw: sw.width > 0 && sw.left >= 0 && sw.right <= innerWidth + 1, navBottom: Math.round(innerHeight - nav.bottom), navTop: Math.round(nav.top), first: document.querySelector(".nav:not([hidden])").getBoundingClientRect().width > 20 }; })()`);
+        check(`[shell] ${w}px wide: no sideways page scroll, switcher and pages on screen`, fit.scroll <= 0 && fit.sw && fit.first && (w > 700 || (fit.navBottom === 0 && fit.navTop > h - 90)), JSON.stringify(fit));
+        if (SHOTS) await A.shot(path.join(SHOTS, `shell-school-${w}.png`), w, h);
+      }
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+      await A.nav("settings");
+      await sleep(400);
+      check("[shell] phone: the open page's button is scrolled into view in the bottom bar", await A.ev(`(() => { const b = document.querySelector(".nav.active").getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth + 1; })()`));
+      await A.nav("assistant");
+      await sleep(400);
+      check("[shell] phone: the AI message box sits above the bottom bar", await A.ev(`document.querySelector("#chatShell").getBoundingClientRect().bottom <= document.querySelector("#nav").getBoundingClientRect().top + 1`));
+      if (SHOTS) { await A.shot(path.join(SHOTS, "shell-school-ai-393.png"), 393, 852); await A.click('#wsSwitch [data-mode="planning"]'); await A.shot(path.join(SHOTS, "shell-daydream-393.png"), 393, 852); }
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
     });
 
     await scenario("[look] Settings cannot change the saved design in DayDream mode", async () => {
