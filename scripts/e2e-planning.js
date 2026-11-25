@@ -505,6 +505,38 @@ async function main() {
       check("[icons] the dashboard tiles, hero and covers use drawn icons", (await A.count(".dd-stat-icon svg")) === 4 && (await A.count(".dd-hero-art svg")) === 1 && (await A.count("#dashPlanGrid .dd-cover svg")) === 1);
     });
 
+    await scenario("[safety] new collections and device settings cannot lose or overwrite data", async () => {
+      await A.fresh(NEW, {});
+      const r = await A.ev(`(() => {
+        const before = Object.keys(localStorage).filter((k) => k.startsWith("studyflow")).sort().join();
+        devPref.set("probe", { on: true });
+        const c = coll("studyflowProbe", []);
+        const untouched = localStorage.getItem("studyflowProbe") === null && Object.keys(localStorage).filter((k) => k.startsWith("studyflow")).sort().join() === before;
+        c.update((v) => v.push("a"));
+        localStorage.setItem("studyflowProbe", JSON.stringify(["a", "from another tab"]));
+        c.update((v) => v.push("c"));
+        const merged = c.get();
+        localStorage.setItem("studyflowProbe", "not json");
+        const broken = c.get();
+        const keys = new Set(["studyflowProbe"]);
+        const local = ["studyflowData", "studyflowProbe", "studyflowGone"];
+        const oldCopy = sfSync.plan(local, { data: { studyflowData: "{}" } }, keys);
+        const newCopy = sfSync.plan(local, { data: { studyflowData: "{}" }, schema: 2 }, keys);
+        const size = sfSync.size({ studyflowData: "x".repeat(10), studyflowNotes: "é".repeat(500) });
+        localStorage.removeItem("studyflowProbe");
+        return { pref: devPref.get("probe", null), prefKey: Object.keys(localStorage).filter((k) => /probe/i.test(k)), untouched, merged, broken, oldCopy, newCopy, size, registered: sfKeys.has("studyflowProbe") };
+      })()`);
+      check("[safety] a device setting is saved outside the synced and backed-up keys", r.pref && r.pref.on === true && same(r.prefKey, ["sfLocal.probe"]), JSON.stringify(r.prefKey));
+      check("[safety] a new collection writes nothing until something is added", r.untouched && r.registered);
+      check("[safety] saving keeps what another tab added in between", same(r.merged, ["a", "from another tab", "c"]), JSON.stringify(r.merged));
+      check("[safety] a damaged collection reads as empty", same(r.broken, []));
+      check("[safety] an account copy saved by an older build does not erase new collections", same(r.oldCopy, { remove: ["studyflowGone"], kept: ["studyflowProbe"] }), JSON.stringify(r.oldCopy));
+      check("[safety] an account copy saved by this build can remove them", same(r.newCopy, { remove: ["studyflowProbe", "studyflowGone"], kept: [] }), JSON.stringify(r.newCopy));
+      check("[safety] the account size is measured in bytes and names the biggest part", r.size.total === 13 + 10 + 14 + 1000 && r.size.big === "studyflowNotes", JSON.stringify(r.size));
+      await A.nav("settings");
+      check("[safety] the page still works after the probe", (await A.count(".page.active")) === 1);
+    });
+
     await scenario("[look] Settings cannot change the saved design in DayDream mode", async () => {
       await A.fresh(NEW, { studyflowMode: "school", studyflowColors: { accent: "#2fa57c", background: "#e6f7ef", background2: "#dff3ea", cards: "#ffffff", text: "#1f4a3c" } });
       const saved = await A.ev(`localStorage.getItem("studyflowColors")`);

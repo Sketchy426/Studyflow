@@ -483,6 +483,18 @@ h1,h2,h3,.brand b{font-family:var(--font-head,inherit)}
 <div class="modal-bg" id="modalBg"><div class="modal"><h2 id="modalTitle">Add item</h2><form id="modalForm"><div class="form-grid" id="modalFields"></div><div class="modal-actions"><button type="button" class="btn secondary" id="cancel">Cancel</button><button class="btn" type="submit">Save</button></div></form></div></div><div class="modal-bg" id="planBg"><div class="modal" id="planModal" role="dialog" aria-modal="true" aria-labelledby="planModalTitle"></div></div><div class="toast" id="toast"></div>
 <script>
 try{document.documentElement.dataset.mode=localStorage.getItem('studyflowMode')||'school'}catch(e){}
+// Collections added by the redesign each live in their own localStorage key and are read fresh before every write, so a second tab cannot save an old copy over newer items.
+// Nothing is written until the student adds something. Device-only preferences use the "sfLocal." prefix, which account sync, backups and "delete all data" never see.
+const SF_KEYS=new Set();window.sfKeys=SF_KEYS;
+function coll(key,empty){SF_KEYS.add(key);const get=()=>{try{const v=JSON.parse(localStorage.getItem(key));if(v&&typeof v==='object'&&Array.isArray(v)===Array.isArray(empty))return v}catch(e){}return JSON.parse(JSON.stringify(empty))};
+  return{key,get,update(fn){const v=get();fn(v);try{localStorage.setItem(key,JSON.stringify(v));return true}catch(e){toast("Couldn't save to this browser. Storage may be full or blocked.");return false}}}}
+const devPref={get(k,d){try{const v=JSON.parse(localStorage.getItem('sfLocal.'+k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem('sfLocal.'+k,JSON.stringify(v))}catch(e){}}};
+addEventListener('storage',e=>{if(SF_KEYS.has(e.key)&&typeof render==='function')render()});
+// Account sync rules kept apart from Firebase so they can be tested: how big the saved copy is, and what loading the account's copy may remove from this device.
+// A copy saved by a build from before the redesign has no schema mark and knows nothing about the new collections, so those are kept here and sent back up.
+window.sfSync={SCHEMA:2,MAX:1000000,WARN:800000,
+  size(d){const n=s=>new Blob([s]).size;let total=0,big='',most=0;for(const[k,v]of Object.entries(d)){const b=n(k)+n(v);total+=b;if(b>most){most=b;big=k}}return{total,big}},
+  plan(localKeys,c,newKeys){const old=!(c.schema>=this.SCHEMA),kept=[],remove=[];localKeys.forEach(k=>{if(k in c.data)return;(old&&newKeys.has(k)?kept:remove).push(k)});return{remove,kept}}};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];const today=new Date();today.setHours(0,0,0,0);const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;const plus=n=>{let d=new Date(today);d.setDate(d.getDate()+n);return iso(d)};let classes=[{id:1,name:'Mathematics',teacher:'Period 1',icon:'∑',grades:[{title:'Chapter quiz',score:88,total:100,date:plus(-5)}]},{id:2,name:'English',teacher:'Period 2',icon:'A',grades:[{title:'Essay',score:92,total:100,date:plus(-3)}]},{id:3,name:'Biology',teacher:'Period 3',icon:'⌘',grades:[{title:'Lab report',score:85,total:100,date:plus(-8)}]},{id:4,name:'History',teacher:'Period 4',icon:'▤',grades:[]},{id:5,name:'Chemistry',teacher:'Period 5',icon:'⚗',grades:[]},{id:6,name:'Spanish',teacher:'Period 6',icon:'文',grades:[]}];let tasks=[{id:1,title:'Algebra practice',classId:1,type:'Homework',due:plus(1),points:20,priority:'Medium',done:false},{id:2,title:'English reading response',classId:2,type:'Assignment',due:plus(2),points:30,priority:'High',done:false},{id:3,title:'Biology chapter test',classId:3,type:'Test',due:plus(3),points:100,priority:'High',done:false},{id:4,title:'History project outline',classId:4,type:'Project',due:plus(4),points:50,priority:'Medium',done:false},{id:5,title:'Spanish vocabulary review',classId:6,type:'Homework',due:plus(-1),points:10,priority:'Low',done:true}];let sessions=[{id:1,title:'Review algebra notes',subject:'Mathematics',date:plus(1),time:'16:00',duration:'30 minutes'},{id:2,title:'Prepare biology flashcards',subject:'Biology',date:plus(2),time:'17:00',duration:'25 minutes'}];let month=new Date(today.getFullYear(),today.getMonth(),1),hatClicks=0,hatTimer,mode='';const info={dashboard:['Dashboard',''],classes:['My Classes','Your subjects and current averages.'],assignments:['Assignments','Manage homework, projects, and tests.'],calendar:['Calendar','See your deadlines by date.'],grades:['Grade Tracker','Track scores and understand your progress.'],study:['Planner','Plan focused study sessions.'],work:['Work','Your job: shifts, hours, pay and to-dos.'],plan:['Your plans','Everything you\'re looking forward to.'],journal:['Your journal','Little moments worth keeping.'],checklists:['Checklists','Little things to remember.'],assistant:['AI','Ask about schoolwork or anything else.'],connections:['School Connections','Connect supported school platforms.'],settings:['Settings','Customize your workspace.'],secret:['Games','']};function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function cname(id){return classes.find(c=>c.id===+id)?.name||'General'}function avg(c){return c.grades.length?Math.round(c.grades.reduce((n,g)=>n+g.score/g.total*100,0)/c.grades.length):null}function date(s){return s?new Date(s+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}):'No date'}function toast(s){let t=$('#toast');t.textContent=s;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2400)}
 /* Assignment details: the description and links from Schoology or Classroom, shown when the assignment name is pressed. */
 function webLink(u){try{const x=new URL(String(u||'').trim());return /^https?:$/.test(x.protocol)?x.href:''}catch(e){return ''}}
@@ -2382,17 +2394,19 @@ Storage.prototype.removeItem=function(k){rawRemove.call(this,k);if(this===localS
 const ref=()=>doc(db,'users',user.uid);
 async function push(){
   if(!user||busy)return;busy=true;clearTimeout(timer);
-  try{const at=Date.now();await setDoc(ref(),{data:collect(),updatedAt:at,email:user.email||''});
-    st={uid:user.uid,syncedAt:at,dirty:false};saveSt();badge('Synced');status('Saved to your account '+when(at)+'.')}
+  const data=collect(),sz=sfSync.size(data),kb=n=>Math.round(n/1024).toLocaleString()+' KB',part=({studyflowData:'classes and assignments',studyflowMemories:'the journal',studyflowNotes:'notes',studyflowTrash:'the trash',studyflowFlashcards:'flashcards'})[sz.big]||sz.big;
+  if(sz.total>sfSync.MAX){badge('Too big');status(`Your StudyFlow is too big to save to your account: ${kb(sz.total)} of about ${kb(sfSync.MAX)}. The biggest part is ${part}. Everything is still saved on this device. Delete some of it, or empty the trash, and it will save again.`,true);busy=false;return}
+  try{const at=Date.now();await setDoc(ref(),{data,updatedAt:at,email:user.email||'',schema:sfSync.SCHEMA});
+    st={uid:user.uid,syncedAt:at,dirty:false};saveSt();badge('Synced');status('Saved to your account '+when(at)+'.'+(sz.total>sfSync.WARN?` Your account storage is getting full: ${kb(sz.total)} of about ${kb(sfSync.MAX)}. The biggest part is ${part}.`:''))}
   catch(e){badge('Not synced');status("Couldn't save to your account. Your changes are kept on this device and will be sent next time.",true)}
   busy=false;
 }
 // Replace this device's StudyFlow items with the account's copy, then reload so every page shows it.
 function useCloud(c){
   applying=true;
-  Object.keys(collect()).forEach(k=>{if(!(k in c.data))rawRemove.call(localStorage,k)});
+  const p=sfSync.plan(Object.keys(collect()),c,window.sfKeys);p.remove.forEach(k=>rawRemove.call(localStorage,k));
   Object.entries(c.data).forEach(([k,v])=>{if(mine(k))raw.call(localStorage,k,v)});
-  st={uid:user.uid,syncedAt:c.updatedAt,dirty:false,justLoaded:true};saveSt();location.reload();
+  st={uid:user.uid,syncedAt:c.updatedAt,dirty:p.kept.length>0,justLoaded:true};saveSt();location.reload();
 }
 async function pull(first){
   if(!user||busy)return;
