@@ -395,6 +395,29 @@ async function main() {
       check("[color] School keeps its own color and editable calendar colors", school.blue !== "#e07aa5" && school.theme !== "daydream" && school.editable, JSON.stringify(school));
     });
 
+    await scenario("[tab] the open section's tab has a shadow in every mode", async () => {
+      await A.fresh(NEW, planning);
+      const tab = () => A.ev(`(() => { const n = document.querySelector(".nav.active"), o = [...document.querySelectorAll(".nav:not(.active)")].find((e) => e.getClientRects().length); return { tab: getComputedStyle(n).boxShadow, icon: getComputedStyle(n.querySelector(".nav-icon")).boxShadow, other: getComputedStyle(o).boxShadow + "|" + getComputedStyle(o.querySelector(".nav-icon")).boxShadow }; })()`);
+      const plain = (t) => t.other.startsWith("none|") && !/3px 8px/.test(t.other);
+      await A.nav("journal");
+      await sleep(500);
+      const dd = await tab();
+      check("[tab] DayDream: the open tab has an edge and a soft shadow in the DayDream color, other tabs have none", dd.tab.includes("rgb(111, 131, 223)") && dd.tab.includes("inset") && /3px 8px/.test(dd.icon) && plain(dd), JSON.stringify(dd));
+      await A.nav("settings");
+      await A.click('[data-set-tab="appearance"]');
+      await A.click('[data-dd-color="mint"]');
+      await sleep(500);
+      check("[tab] DayDream: the shadow follows the chosen color", (await tab()).tab.includes("rgb(69, 179, 148)"), JSON.stringify(await tab()));
+      if (SHOTS) { await A.nav("journal"); await A.shot(path.join(SHOTS, "tab-shadow-daydream.png"), 1280, 900); }
+      for (const m of ["work", "school"]) {
+        await A.setMode(m);
+        await sleep(500);
+        const t = await tab();
+        check(`[tab] ${m}: the open tab has an edge and a soft shadow`, t.tab.includes("inset") && /3px 8px/.test(t.icon) && plain(t), JSON.stringify(t));
+        if (SHOTS && m === "work") await A.shot(path.join(SHOTS, "tab-shadow-work.png"), 1280, 900);
+      }
+    });
+
     await scenario("[camera] the journal can take a photo with the camera", async () => {
       await A.fresh(NEW, planning);
       await A.nav("journal");
