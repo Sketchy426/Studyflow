@@ -1014,6 +1014,57 @@ async function main() {
       check("[photos] and the journal shows them", same(await thumbs(), [true, true]) && (await A.ev(`!!document.querySelector('#memoryGrid [data-mem="${cover}"] img.dd-memory-image')`)));
     });
 
+    await scenario("[dark] light, dark or auto on this device", async () => {
+      const rose = { accent: "#d9578b", background: "#fff1f6", background2: "#ffe3ee", cards: "#ffffff", text: "#5a2a3e" };
+      await A.fresh(NEW, { studyflowColors: rose });
+      const state = () => A.ev(`(() => { const h = document.documentElement, cs = getComputedStyle(h), b = getComputedStyle(document.body); return { dark: h.dataset.dark !== undefined, theme: h.dataset.theme ?? null, blue: cs.getPropertyValue("--blue").trim(), card: cs.getPropertyValue("--card-solid").trim(), ink: cs.getPropertyValue("--ink").trim(), saved: localStorage.getItem("studyflowColors"), pref: localStorage.getItem("sfLocal.look"), preset: document.querySelector("#colorPresets .active")?.dataset.name ?? null, accentInput: document.querySelector("#colorAccent").value }; })()`);
+      const lum = (hex) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+      const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+      const light = await state();
+      check("[dark] the default is light with the saved design", !light.dark && light.theme === "rose" && light.blue === "#d9578b" && light.pref === null);
+      await A.nav("settings");
+      await A.click('[data-set-tab="appearance"]');
+      await A.click('#lookSeg [data-look="dark"]');
+      const dark = await state();
+      check("[dark] Dark draws the Night design in StudyFlow", dark.dark && dark.theme === "night" && dark.blue === "#8ea8ff" && dark.card === "#1a2145" && contrast(dark.ink, dark.card) > 7, JSON.stringify(dark));
+      check("[dark] the saved design is untouched and still shown as chosen", dark.saved === light.saved && dark.preset === "Rose" && dark.accentInput === "#d9578b" && dark.pref === '"dark"', JSON.stringify(dark));
+      if (SHOTS) { await A.nav("dashboard"); await A.shot(path.join(SHOTS, "dark-school-1280.png"), 1280, 900); }
+      await A.reload();
+      const again = await state();
+      check("[dark] dark survives a reload without changing the saved design", again.dark && again.theme === "night" && again.saved === light.saved);
+      await A.click('#wsSwitch [data-mode="planning"]');
+      const dd = await A.ev(`(() => { const cs = getComputedStyle(document.documentElement); const hex = (c) => { const x = Object.assign(document.createElement("canvas"), { width: 1, height: 1 }).getContext("2d"); x.fillStyle = "#151929"; x.fillRect(0, 0, 1, 1); x.fillStyle = c; x.fillRect(0, 0, 1, 1); return "#" + [...x.getImageData(0, 0, 1, 1).data].slice(0, 3).map((n) => n.toString(16).padStart(2, "0")).join(""); }; return { theme: document.documentElement.dataset.theme, blue: cs.getPropertyValue("--blue").trim(), card: cs.getPropertyValue("--card-solid").trim(), ink: cs.getPropertyValue("--ink").trim(), page: hex(getComputedStyle(document.body).backgroundColor), text: hex(getComputedStyle(document.querySelector("#pageTitle")).color), widget: hex(getComputedStyle(document.querySelector(".dd-widget, .dd-stat")).backgroundColor) }; })()`);
+      check("[dark] DayDream has its own dark look and keeps its chosen color", dd.theme === "daydream" && dd.blue === "#6f83df" && dd.card === "#1f2538" && dd.page === "#151929" && contrast(dd.text, dd.page) > 7 && contrast(dd.ink, dd.widget) > 7, JSON.stringify(dd));
+      const readable = async (p) => { await A.nav(p); await sleep(200); return A.ev(`(() => { const px = (c, under) => { const x = Object.assign(document.createElement("canvas"), { width: 1, height: 1 }).getContext("2d"); if (under) { x.fillStyle = under; x.fillRect(0, 0, 1, 1); } x.fillStyle = c; x.fillRect(0, 0, 1, 1); return [...x.getImageData(0, 0, 1, 1).data]; }; const lum = (c) => { const [r, g, b] = px(c, "#808080").slice(0, 3).map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; }; const bg = (e) => { for (; e; e = e.parentElement) { const s = getComputedStyle(e); if (s.backgroundImage !== "none") return null; if (px(s.backgroundColor)[3] > 150) return s.backgroundColor; } return getComputedStyle(document.body).backgroundColor; }; const bad = []; for (const e of document.querySelectorAll(".page.active h2, .page.active h3, .page.active p, .page.active b, .page.active button, .page.active label, .page.active td, .page.active th")) { if (!e.getClientRects().length || !e.textContent.trim() || e.children.length) continue; const b = bg(e); if (!b) continue; const [x, y] = [lum(getComputedStyle(e).color), lum(b)].sort((p, q) => q - p); const r = (x + 0.05) / (y + 0.05); if (r < 3) bad.push(e.textContent.trim().slice(0, 24) + " " + r.toFixed(1)); } return bad; })()`); };
+      await A.ev(`localStorage.setItem("studyflowEvents", JSON.stringify([{ id: 81, title: "Lake trip", date: "2027-06-10", start: "", end: "", note: "", mode: "planning", type: "trip", place: "Lake", icon: "tent" }])); localStorage.setItem("studyflowMemories", JSON.stringify([{ id: "m1", title: "Zoo day", date: "2027-05-01", mood: "Happy", text: "Giraffes", tags: ["zoo"], hasPhoto: false }])); localStorage.setItem("studyflowPlanning", JSON.stringify({ v: 1, todos: [{ id: 91, title: "Sunscreen", due: "", priority: "Medium", note: "", done: false }] }))`);
+      await A.reload();
+      for (const p of ["dashboard", "plan", "calendar", "checklists", "budget", "journal", "settings"]) {
+        const bad = await readable(p);
+        check(`[dark] DayDream ${p}: text stands out from what is behind it`, bad.length === 0, bad.join(" | "));
+        if (SHOTS) await A.shot(path.join(SHOTS, `dark-daydream-${p}.png`), 1280, 900);
+      }
+      await A.click('#wsSwitch [data-mode="school"]');
+      for (const p of ["dashboard", "assignments", "classes", "notes", "grades", "study", "flashcards", "focus", "calendar", "settings"]) {
+        const bad = await readable(p);
+        check(`[dark] StudyFlow ${p}: text stands out from what is behind it`, bad.length === 0, bad.join(" | "));
+      }
+      await A.nav("settings");
+      await A.click('[data-set-tab="appearance"]');
+      await A.click('#colorPresets [data-name="Mint"]');
+      const picked = await state();
+      check("[dark] picking a design turns dark off, shows the design and saves it", !picked.dark && picked.theme === "mint" && picked.blue === "#2fa57c" && JSON.parse(picked.saved).accent === "#2fa57c" && picked.pref === '"light"', JSON.stringify(picked));
+      await A.click('#lookSeg [data-look="auto"]');
+      await A.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+      await sleep(250);
+      const autoDark = await state();
+      await A.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
+      await sleep(250);
+      const autoLight = await state();
+      check("[dark] Auto follows the device", autoDark.dark && autoDark.theme === "night" && !autoLight.dark && autoLight.theme === "mint" && /your device is set to light/.test(await A.text("#lookHint")), JSON.stringify([autoDark.theme, autoLight.theme]));
+      await A.send("Emulation.setEmulatedMedia", { features: [] });
+      check("[dark] the setting stays out of the synced and backed-up data", !Object.keys(await A.snapshot()).some((k) => /look/i.test(k)));
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
@@ -1052,14 +1103,14 @@ async function main() {
       const panel = () => A.ev(`document.querySelector("#setPanel-appearance").innerText`);
       await A.setMode("planning");
       await A.click('[data-set-tab="appearance"]');
-      check("[look] DayDream mode shows only its five color buttons in Settings", (await controls()) === 5 && (await A.count("#setPanel-appearance [data-dd-color]")) === 5, `${await controls()} visible`);
+      check("[look] DayDream mode shows only its five color buttons and the light or dark switch in Settings", (await controls()) === 8 && (await A.count("#setPanel-appearance [data-dd-color]")) === 5 && (await A.count("#setPanel-appearance [data-look]")) === 3, `${await controls()} visible`);
       check("[look] Appearance says the DayDream color leaves the School and Work design alone", /Pick a color for DayDream/.test(await panel()) && /School and Work design is not changed/.test(await panel()), await panel());
       await A.click('[data-dd-color="mint"]');
       check("[look] studyflowColors is unchanged", (await A.ev(`localStorage.getItem("studyflowColors")`)) === saved);
       for (const m of ["school", "work"]) {
         await A.setMode(m);
         await A.click('[data-set-tab="appearance"]');
-        check(`[look] ${m}: the color controls are back and the DayDream note is gone`, (await controls()) > 5 && !/DayDream/.test(await panel()), `${await controls()} ${await panel()}`);
+        check(`[look] ${m}: the color controls are back and the DayDream note is gone`, (await controls()) > 8 && !/Pick a color for DayDream/.test(await panel()), `${await controls()} ${await panel()}`);
       }
     });
 
