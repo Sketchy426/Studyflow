@@ -327,7 +327,7 @@ async function main() {
       await A.setMode("planning");
       check("[name] eyebrow says DayDream", /DAYDREAM/.test(await A.text("#eyebrow")), await A.text("#eyebrow"));
       const nav = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.textContent.trim())`);
-      check("[name] nav is Home, My Plans, Calendar, Checklists, Digital Journal, AI, Settings", same([...nav].sort(), ["AI", "Calendar", "Checklists", "Digital Journal", "Home", "My Plans", "Settings"]), JSON.stringify(nav));
+      check("[name] nav is Home, My Plans, Calendar, Checklists, Budget Planner, Digital Journal, AI, Settings", same([...nav].sort(), ["AI", "Budget Planner", "Calendar", "Checklists", "Digital Journal", "Home", "My Plans", "Settings"]), JSON.stringify(nav));
       const visible = await A.ev(`document.body.innerText`);
       for (const p of ["dashboard", "plan", "calendar", "journal", "checklists", "settings", "assistant"]) {
         await A.nav(p);
@@ -803,6 +803,81 @@ async function main() {
       await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
     });
 
+    await scenario("[trip] a plan holds an itinerary, a budget, guests and trip details", async () => {
+      const today = await A.ev(`(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })()`);
+      const seedEvents = [{ id: 81, title: "Lake trip", date: "2027-06-10", start: "", end: "", note: "", mode: "planning", type: "trip", place: "Lake", icon: "tent" }, { id: 82, title: "Birthday", date: "2027-03-01", start: "", end: "", note: "", mode: "planning", type: "event", place: "Home", icon: "cake" }];
+      await A.fresh(NEW, { ...planning, studyflowEvents: seedEvents, studyflowPlanning: { v: 1, todos: [{ id: 91, title: "pack tent", due: "", priority: "Medium", note: "", done: false, planId: 81 }] } });
+      const before = await A.snapshot();
+      await A.nav("plan");
+      await A.click('[data-plan-open="81"] .dd-plan-title');
+      check("[trip] the plan panel has four planning sections and still its checklist", same(await A.ev(`[...document.querySelectorAll("#planModal .trip-sec")].map((d) => d.dataset.tripSec)`), ["itin", "budget", "guests", "info"]) && /pack tent/.test(await A.text("#planModal")) && same(await A.snapshot(), before));
+      const openSec = (k) => A.ev(`(() => { const d = document.querySelector('#planModal [data-trip-sec="${k}"]'); if (!d.open) d.querySelector("summary").click(); })()`);
+      const add = async (k, f) => { for (const [n, v] of Object.entries(f)) await A.setValue(`#planModal [data-trip-form="${k}"] [name="${n}"]`, v); await A.submit(`#planModal [data-trip-form="${k}"]`); };
+      await openSec("itin");
+      await add("itin", { day: "2027-06-11", time: "14:00", title: "Kayak rental" });
+      await add("itin", { day: "2027-06-10", time: "09:30", title: "Drive up" });
+      await add("itin", { day: "2027-06-11", time: "08:00", title: "Pancakes <b>" });
+      const itin = await A.ev(`[...document.querySelectorAll('#planModal [data-trip-sec="itin"] .trip-day, #planModal [data-trip-sec="itin"] .trip-row > span:first-child')].map((e) => e.textContent.trim())`);
+      check("[trip] itinerary stops are grouped by day and sorted by time, and the section stays open", same(itin, ["Thu, Jun 10", "9:30 AMDrive up", "Fri, Jun 11", "8:00 AMPancakes <b>", "2:00 PMKayak rental"]) && (await A.ev(`document.querySelector('#planModal [data-trip-sec="itin"]').open`)), JSON.stringify(itin));
+      check("[trip] the cursor is back in the add box", await A.ev(`document.activeElement.name === "title" && !!document.activeElement.closest('[data-trip-form="itin"]')`));
+      await openSec("budget");
+      await add("budget", { name: "Cabin", cat: "Stay", est: "200", act: "" });
+      await add("budget", { name: "Gas", cat: "Travel", est: "60", act: "75.5" });
+      check("[trip] without a set budget the estimate is the plan", same(await A.ev(`sfTripTotals(81)`), { est: 260, spent: 75.5, plan: 260, left: 184.5 }));
+      await add("limit", { limit: "250" });
+      const cabin = (await A.ls("studyflowTrips"))["81"].budget.items[0].id;
+      await A.setValue(`#planModal [data-trip-act="${cabin}"]`, "210");
+      await A.ev(`document.querySelector('#planModal [data-trip-act="${cabin}"]').dispatchEvent(new Event("change", { bubbles: true }))`);
+      const money = await A.text('#planModal [data-trip-sec="budget"] .money');
+      check("[trip] the budget shows the limit, what is spent and how far over", same(await A.ev(`sfTripTotals(81)`), { est: 260, spent: 285.5, plan: 250, left: -35.5 }) && /Budget\s*\$250/.test(money) && /Spent\s*\$285\.50/.test(money) && /Over by\s*\$35\.50/.test(money) && (await A.count("#planModal .money-bar.over")) === 1, money);
+      check("[trip] spending is summed by category", same(await A.ev(`[...document.querySelectorAll("#planModal .cat-row")].map((r) => [r.querySelector("span").textContent, r.querySelector("b").textContent])`), [["Travel", "$75.50"], ["Stay", "$210"]]));
+      await openSec("guests");
+      await add("guests", { name: "Mia" });
+      await add("guests", { name: "Leo" });
+      const mia = (await A.ls("studyflowTrips"))["81"].guests[0].id;
+      await A.setValue(`#planModal [data-trip-rsvp="${mia}"]`, "yes");
+      await A.ev(`document.querySelector('#planModal [data-trip-rsvp="${mia}"]').dispatchEvent(new Event("change", { bubbles: true }))`);
+      check("[trip] guests keep their replies and the heading counts who is coming", /1 of 2 coming/.test(await A.text('#planModal [data-trip-sec="guests"] summary')) && (await A.ls("studyflowTrips"))["81"].guests[0].rsvp === "yes");
+      await openSec("info");
+      await A.setValue('#planModal [data-trip-info="stay"]', "Pine cabin 4");
+      await A.ev(`document.querySelector('#planModal [data-trip-info="stay"]').dispatchEvent(new Event("change", { bubbles: true }))`);
+      await A.setValue('#planModal [data-trip-info="endDate"]', "2027-06-13");
+      await A.ev(`document.querySelector('#planModal [data-trip-info="endDate"]').dispatchEvent(new Event("change", { bubbles: true }))`);
+      check("[trip] trip details are saved", same((await A.ls("studyflowTrips"))["81"].info, { stay: "Pine cabin 4", endDate: "2027-06-13" }) && /2 of 4 filled in/.test(await A.text('#planModal [data-trip-sec="info"] summary')));
+      if (SHOTS) await A.shot(path.join(SHOTS, "trip-1280.png"), 1280, 900);
+      const after = await A.snapshot();
+      check("[trip] the plan, its checklist and every older key are untouched", same(Object.keys(after).sort(), [...Object.keys(before), "studyflowTrips"].sort()) && Object.keys(before).every((k) => before[k] === after[k]));
+      await A.click("#planModal [data-plan-del]");
+      await A.click("#confirmYes");
+      check("[trip] deleting the plan keeps its planning for a restore", !!(await A.ls("studyflowTrips"))["81"] && !(await A.ls("studyflowEvents")).some((e) => e.id === 81));
+      await A.click(".toast-undo");
+      await A.click('[data-plan-open="81"] .dd-plan-title');
+      check("[trip] the restored plan has its itinerary, budget and guests again", /3 stops/.test(await A.text("#planModal")) && /1 of 2 coming/.test(await A.text("#planModal")) && /pack tent/.test(await A.text("#planModal")));
+      await A.click(`#planModal [data-trip-del="guests:${mia}"]`);
+      check("[trip] a guest can be removed", (await A.ls("studyflowTrips"))["81"].guests.length === 1);
+      await A.press("Escape");
+      await A.reload();
+      await A.nav("budget");
+      const page = await A.text("#budgetPage");
+      check("[trip] the Budget Planner page adds up plans that have a budget, after a reload", (await A.text("#pageTitle")) === "Budget Planner" && /Lake trip\s*\$250\s*\$285\.50\s*-\$35\.50/.test(page) && !/Birthday/.test(page) && /All plans\s*\$250\s*\$285\.50\s*-\$35\.50/.test(page), page);
+      if (SHOTS) await A.shot(path.join(SHOTS, "budget-1280.png"), 1280, 900);
+      await A.click('#budgetPage [data-plan-open="81"]');
+      check("[trip] a row opens that plan with its budget showing", /Lake trip/.test(await A.text("#planModalTitle")) && (await A.ev(`document.querySelector('#planModal [data-trip-sec="budget"]').open`)));
+      await A.press("Escape");
+      check("[trip] search finds a stop, an expense and a guest", same(await A.ev(`["kayak", "cabin", "leo"].map((q) => sfSearch(q).map((h) => h.kind + ":" + h.title + ":" + h.sub).join("|"))`), ["Itinerary:Kayak rental:Lake trip", "Expense:Cabin:Lake trip", "Guest:Leo:Lake trip"]), JSON.stringify(await A.ev(`["kayak", "cabin", "leo"].map((q) => sfSearch(q).map((h) => h.kind + ":" + h.title + ":" + h.sub).join("|"))`)));
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+      await A.nav("plan");
+      await A.click('[data-plan-open="81"] .dd-plan-title');
+      await openSec("budget");
+      await sleep(250);
+      check("[trip] phone: the plan panel and its budget fit the screen", await A.ev(`(() => { const r = document.querySelector("#planModal").getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1 && document.querySelector("#planModal").scrollWidth <= document.querySelector("#planModal").clientWidth + 1; })()`));
+      if (SHOTS) await A.shot(path.join(SHOTS, "trip-393.png"), 393, 852);
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+      await A.fresh(NEW, { ...planning, studyflowEvents: seedEvents });
+      await A.nav("budget");
+      check("[trip] with no budgets the page explains how to start, and nothing is saved", /No budgets yet/.test(await A.text("#budgetPage")) && (await A.ev(`localStorage.getItem("studyflowTrips")`)) === null);
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
@@ -810,7 +885,7 @@ async function main() {
       check("[shell] the switcher shows the current workspace", same(await A.ev(`[...document.querySelectorAll("#wsSwitch button")].map((b) => [b.textContent, b.getAttribute("aria-pressed")])`), [["School", "true"], ["Work", "false"], ["DayDream", "false"]]));
       await A.click('#wsSwitch [data-mode="planning"]');
       check("[shell] the switcher opens DayDream and saves it", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "planning" && (await A.text(".brand b")) === "DayDream");
-      check("[shell] DayDream groups its pages", same(await groups(), [["YOUR SPACE", ["Home", "My Plans", "Calendar"]], ["ORGANIZATION", ["Checklists"]], ["MEMORIES", ["Digital Journal"]], ["MORE", ["AI", "Settings"]]]), JSON.stringify(await groups()));
+      check("[shell] DayDream groups its pages", same(await groups(), [["YOUR SPACE", ["Home", "My Plans", "Calendar"]], ["ORGANIZATION", ["Checklists", "Budget Planner"]], ["MEMORIES", ["Digital Journal"]], ["MORE", ["AI", "Settings"]]]), JSON.stringify(await groups()));
       await A.nav("settings");
       check("[shell] the Settings switch agrees with the sidebar one", (await A.ev(`document.querySelector('#modeSeg [data-mode="planning"]').classList.contains("on")`)) === true);
       await A.click('#wsSwitch [data-mode="work"]');
@@ -1297,7 +1372,7 @@ async function main() {
       await A.saveMemory({ "#memoryTitle": "Phone" }, true);
       await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
       await sleep(300);
-      check("[8] seven nav items at 393px", (await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => b.offsetParent !== null).length`)) === 7);
+      check("[8] eight nav items at 393px", (await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => b.offsetParent !== null).length`)) === 8);
       for (const p of ["dashboard", "plan", "calendar", "journal", "checklists", "settings"]) {
         await A.nav(p);
         const w = await A.ev(`document.documentElement.scrollWidth`);
