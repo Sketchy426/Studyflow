@@ -1065,6 +1065,51 @@ async function main() {
       check("[dark] the setting stays out of the synced and backed-up data", !Object.keys(await A.snapshot()).some((k) => /look/i.test(k)));
     });
 
+    await scenario("[ai] study actions and a class to ask about", async () => {
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", sessions: [], classes: [{ id: 2001, name: "Biology", teacher: "", icon: "B", grades: [], weights: {}, credits: 1 }], tasks: [] } });
+      await A.nav("assistant");
+      check("[ai] the school actions include step by step, study guide and summarize", same(await A.texts("#chatChips .chat-chip"), ["Explain this simply", "Step by step", "Study guide", "Summarize", "Quiz me", "Make flashcards", "Turn notes into Q&A", "Help me study"]));
+      check("[ai] the class list offers Any class and each class", same(await A.texts("#chatClass option"), ["Any class", "Biology"]));
+      await A.click('#chatChips [data-chip="guide"]');
+      check("[ai] an action with a blank writes the request and selects the blank", (await A.value("#assistantInput")).startsWith("Make a study guide for [topic]") && (await A.ev(`(() => { const i = document.querySelector("#assistantInput"); return i.value.slice(i.selectionStart, i.selectionEnd); })()`)) === "[topic]");
+      await A.setValue("#assistantInput", "");
+      await A.setValue("#chatClass", "2001");
+      await A.ev(`document.querySelector("#chatClass").dispatchEvent(new Event("change", { bubbles: true }))`);
+      await A.ev(`window.fetch = () => Promise.reject(new Error("offline in the test"))`);
+      await A.click('#chatChips [data-chip="study"]');
+      await sleep(600);
+      const first = await A.ev(`guideHistory.find((m) => m.role === "user").content`);
+      check("[ai] with a class chosen the question says which class it is for", first.startsWith("Help me study.") && first.endsWith("(This is for my Biology class.)"), first);
+      check("[ai] the student sees that line in the chat", /This is for my Biology class/.test(await A.text("#chatShell")));
+      await A.click('#wsSwitch [data-mode="planning"]');
+      await A.nav("assistant");
+      check("[ai] DayDream has no class list and keeps its own actions", (await A.ev(`document.querySelector(".chat-class").getClientRects().length`)) === 0 && (await A.texts("#chatChips .chat-chip")).length === 5);
+    });
+
+    await scenario("[week] the Study Planner shows the week and a weekly goal", async () => {
+      const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+      const sess = (id, title, n, time, duration) => ({ id, title, subject: "Math", date: day(n), time, duration, note: "" });
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [], weights: {}, credits: 1 }], tasks: [], sessions: [sess(3001, "Evening review", 0, "19:00", "45 minutes"), sess(3002, "Morning drill", 0, "08:00", "30 minutes"), sess(3003, "Next week prep", 7, "", "60 minutes")] }, studyflowFocus: { [day(0)]: 25 } });
+      await A.nav("study");
+      const w = await A.ev(`sfStudyWeek()`);
+      check("[week] this week adds up planned sessions and focused minutes, earliest first within a day", w.planned === 75 && w.focused === 25 && w.days.some((d) => same(d, ["Morning drill", "Evening review"])) && !w.days.flat().includes("Next week prep"), JSON.stringify(w));
+      check("[week] seven days are drawn with today marked and nothing saved yet", (await A.count("#studyWeek .sw-day")) === 7 && (await A.count("#studyWeek .sw-day.now")) === 1 && /No weekly goal yet/.test(await A.text("#swGoalText")) && (await A.ev(`localStorage.getItem("studyflowStudyGoal")`)) === null);
+      await A.setValue("#swGoal", "240");
+      await A.ev(`document.querySelector("#swGoal").dispatchEvent(new Event("change", { bubbles: true }))`);
+      check("[week] a weekly goal shows how much is left", same(await A.ls("studyflowStudyGoal"), { minutes: 240 }) && /2h 20m to go of 4h/.test(await A.text("#swGoalText")), await A.text("#swGoalText"));
+      if (SHOTS) await A.shot(path.join(SHOTS, "study-week-1280.png"), 1280, 900);
+      await A.click('#studyWeek [data-sw="1"]');
+      check("[week] the arrow moves to next week", /Next week/.test(await A.text("#studyWeek h3")) && /Next week prep/.test(await A.text("#studyWeek .sw-grid")) && !/Morning drill/.test(await A.text("#studyWeek .sw-grid")));
+      await A.click('#studyWeek [data-sw="0"]');
+      await A.reload();
+      await A.nav("study");
+      check("[week] the goal survives a reload and the list of sessions is still below", /to go of 4h/.test(await A.text("#swGoalText")) && /Evening review/.test(await A.text("#studyList")));
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+      await sleep(250);
+      check("[week] phone: the page does not scroll sideways", (await A.ev(`document.documentElement.scrollWidth - innerWidth`)) <= 0);
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
