@@ -285,7 +285,11 @@ async function main() {
         const [event, trash] = own[mode];
         check(`[7] ${mode}: the first draw after loading shows only this section's event and Recently deleted`, after.first.chips.length === 1 && after.first.chips[0].includes(event) && same(after.first.trash, [trash]), JSON.stringify(after.first));
         if (!same(before.first, after.first)) console.log(`INFO ${mode}: the old build's first draw showed ${JSON.stringify(before.first)}, the new build's ${JSON.stringify(after.first)}`);
-        for (const k of Object.keys(before)) if (k !== "first" || mode === "school") check(`[7] ${mode}: ${k} matches the old build`, same(before[k], after[k]), `old ${JSON.stringify(before[k])} new ${JSON.stringify(after[k])}`);
+        for (const k of Object.keys(before)) if (k !== "first" || mode === "school") {
+          // Pages may be added, so for the page list and titles every old page must still be there, unchanged.
+          const kept = k === "nav" || k === "titles" ? before[k].every((x) => after[k].some((y) => same(x, y))) : same(before[k], after[k]);
+          check(`[7] ${mode}: ${k} ${k === "nav" || k === "titles" ? "still has everything the old build had" : "matches the old build"}`, kept, `old ${JSON.stringify(before[k])} new ${JSON.stringify(after[k])}`);
+        }
       }
     });
 
@@ -701,10 +705,108 @@ async function main() {
       await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
     });
 
+    await scenario("[class] classes have a color, a goal and a detail view", async () => {
+      const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+      const g = (id, score, n) => ({ id, title: "Quiz " + id, type: "Quiz", score, total: 10, date: day(n) });
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", sessions: [], classes: [{ id: 2001, name: "Math", teacher: "Mr Lee", icon: "M", grades: [g(1, 6, -9), g(2, 8, -5), g(3, 10, -1)], weights: {}, credits: 1, gcId: "keep-me" }, { id: 2002, name: "Art", teacher: "", icon: "A", grades: [], weights: {}, credits: 1 }],
+        tasks: [{ id: 4001, title: "Unit test", classId: 2001, type: "Test", due: day(3), points: 50, priority: "High", done: false }, { id: 4002, title: "Old sheet", classId: 2001, type: "Homework", due: day(-4), points: 10, priority: "Low", done: true }, { id: 4003, title: "Art poster", classId: 2002, type: "Project", due: day(5), points: 10, priority: "Low", done: false }] } });
+      await A.nav("classes");
+      await A.click('[data-class-open="2001"]');
+      const view = await A.text("#classDlg");
+      check("[class] the detail view shows the grade, what is coming up and recent scores", /Math/.test(view) && /80%\s*B/.test(view) && /Unit test · Test/.test(view) && !/Old sheet/.test(view) && !/Art poster/.test(view) && /Quiz 3 · .*10 of 10 · 100%/.test(view) && /No goal yet/.test(view), view);
+      check("[class] the trend is the running average, oldest score first", same(await A.ev(`sfClassTrend(classes.find((c) => c.id === 2001)).map(Math.round)`), [60, 70, 80]) && /Up 20 points since your first score/.test(view) && (await A.count("#classDlg .spark polyline")) === 1);
+      await A.click("#classEdit");
+      await A.setValue('#classForm [name="name"]', "Algebra");
+      await A.setValue('#classForm [name="goal"]', "90");
+      await A.ev(`(() => { const r = document.querySelector('#classForm [name="color"][value="#2fa57c"]'); r.checked = true; })()`);
+      await A.submit("#classForm");
+      const c = (await A.ls("studyflowData")).classes.find((x) => x.id === 2001);
+      check("[class] editing saves the name, goal and color and keeps everything else", c.name === "Algebra" && c.goal === 90 && c.color === "#2fa57c" && c.gcId === "keep-me" && c.grades.length === 3 && c.teacher === "Mr Lee", JSON.stringify(c).slice(0, 300));
+      check("[class] the view shows how far the goal is", /10 points below your goal of 90%/.test(await A.text("#goalText")) && (await A.count("#classDlg .goal-bar i")) === 1, await A.text("#goalText"));
+      if (SHOTS) await A.shot(path.join(SHOTS, "class-detail-1280.png"), 1280, 900);
+      await A.click("#classClose");
+      const card = await A.ev(`(() => { const b = document.querySelector('[data-class-open="2001"]'); return { text: b.textContent, color: getComputedStyle(b.querySelector(".class-icon")).color, bar: getComputedStyle(b.querySelector(".progress span")).backgroundColor, other: document.querySelector('[data-class-open="2002"]').getAttribute("style") }; })()`);
+      check("[class] the card shows the new name, goal and color, and a class without a color is unchanged", /Algebra/.test(card.text) && /goal 90%/.test(card.text) && card.color === "rgb(47, 165, 124)" && card.bar === "rgb(47, 165, 124)" && card.other === "", JSON.stringify(card));
+      await A.click('[data-class-open="2001"]');
+      await A.click("#classEdit");
+      await A.setValue('#classForm [name="goal"]', "");
+      await A.ev(`document.querySelector('#classForm [name="color"][value=""]').checked = true`);
+      await A.submit("#classForm");
+      const cleared = (await A.ls("studyflowData")).classes.find((x) => x.id === 2001);
+      check("[class] clearing the goal and color removes them", !("goal" in cleared) && !("color" in cleared));
+      await A.click("#classClose");
+    });
+
+    await scenario("[notes] a Notes page by class and topic", async () => {
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", sessions: [], classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [], weights: {}, credits: 1, color: "#8b6fe0" }, { id: 2002, name: "Art", teacher: "", icon: "A", grades: [], weights: {}, credits: 1 }], tasks: [] } });
+      check("[notes] nothing is saved before the first note", (await A.ev(`localStorage.getItem("studyflowNotes")`)) === null);
+      await A.nav("notes");
+      check("[notes] the page opens from the Academics group with an empty state", (await A.text("#pageTitle")) === "Notes" && /No notes yet/.test(await A.text("#noteGrid")));
+      const add = async (f) => { await A.click("#addNote"); for (const [n, v] of Object.entries(f)) await A.setValue(`#noteForm [name="${n}"]`, v); await A.submit("#noteForm"); await sleep(150); };
+      await A.click("#addNote");
+      await A.submit("#noteForm");
+      check("[notes] an empty note is not saved", /Add a title or some writing/.test(await A.text("#noteMsg")) && (await A.ev(`localStorage.getItem("studyflowNotes")`)) === null);
+      await A.click("#noteCancel");
+      await add({ title: "Fractions <b>rules</b>", classId: "2001", topic: "Chapter 4", text: "Flip the second fraction, then multiply." });
+      await add({ title: "Color wheel", classId: "2002", topic: "", text: "Primary and secondary colors." });
+      await add({ title: "Locker code idea", classId: "", topic: "", text: "Ask the office." });
+      const notes = await A.ls("studyflowNotes");
+      check("[notes] notes are saved in their own collection with class and topic", notes.length === 3 && same(Object.keys(notes[2]).sort(), ["at", "classId", "id", "text", "title", "topic"]) && notes[2].classId === 2001 && notes[2].topic === "Chapter 4" && notes[0].classId === null, JSON.stringify(notes).slice(0, 400));
+      check("[notes] cards show the newest first, with escaped text and the class color", same(await A.texts("#noteGrid .note-card b"), ["Locker code idea", "Color wheel", "Fractions <b>rules</b>"]) && (await A.ev(`document.querySelectorAll("#noteGrid .note-card")[2].getAttribute("style")`)) === "--cc:#8b6fe0");
+      await A.setValue("#noteClass", "2001");
+      await A.ev(`document.querySelector("#noteClass").dispatchEvent(new Event("change", { bubbles: true }))`);
+      check("[notes] the class filter narrows the list", same(await A.texts("#noteGrid .note-card b"), ["Fractions <b>rules</b>"]) && same(await A.texts("#noteClass option"), ["All classes", "Math", "Art", "No class"]));
+      await A.setValue("#noteClass", "all");
+      await A.ev(`document.querySelector("#noteClass").dispatchEvent(new Event("change", { bubbles: true }))`);
+      await A.setValue("#noteSearch", "multiply");
+      check("[notes] search looks inside the note text", same(await A.texts("#noteGrid .note-card b"), ["Fractions <b>rules</b>"]));
+      await A.setValue("#noteSearch", "zebra");
+      check("[notes] no match says so", /No notes match/.test(await A.text("#noteGrid")));
+      await A.setValue("#noteSearch", "");
+      if (SHOTS) await A.shot(path.join(SHOTS, "notes-1280.png"), 1280, 900);
+      await A.click(`[data-note-open="${notes[2].id}"]`);
+      check("[notes] a card opens the note for editing", (await A.text("#noteDlgTitle")) === "Edit note" && (await A.value('#noteForm [name="topic"]')) === "Chapter 4" && (await A.value('#noteForm [name="classId"]')) === "2001");
+      await A.setValue('#noteForm [name="text"]', "Keep, change, flip.");
+      await A.submit("#noteForm");
+      const edited = await A.ls("studyflowNotes");
+      check("[notes] editing changes the note in place and moves it to the top", edited.length === 3 && edited.find((n) => n.id === notes[2].id).text === "Keep, change, flip." && (await A.texts("#noteGrid .note-card b"))[0] === "Fractions <b>rules</b>");
+      await A.ev(`localStorage.setItem("studyflowNotes", JSON.stringify([{ id: "tab2", title: "From another tab", topic: "", text: "x", classId: null, at: Date.now() + 5000 }, ...JSON.parse(localStorage.getItem("studyflowNotes"))]))`);
+      await add({ title: "After the other tab", classId: "", topic: "", text: "y" });
+      check("[notes] saving keeps a note another tab added in between", (await A.ls("studyflowNotes")).some((n) => n.id === "tab2") && (await A.ls("studyflowNotes")).length === 5);
+      await A.reload();
+      await A.nav("classes");
+      await A.click('[data-class-open="2001"]');
+      check("[notes] the class view lists that class's notes after a reload", /Fractions <b>rules<\/b> · Chapter 4/.test(await A.text("#classDlg")) && !/Color wheel/.test(await A.text("#classDlg")));
+      await A.click("#classDlg [data-note-new]");
+      check("[notes] a note started from a class is filed under it", (await A.value('#noteForm [name="classId"]')) === "2001" && !(await A.ev(`document.querySelector("#classDlg").open`)));
+      await A.click("#noteCancel");
+      check("[notes] search finds a note by its text", same(await A.ev(`sfSearch("flip").map((h) => h.kind + ":" + h.title)`), ["Note:Fractions <b>rules</b>"]));
+      await A.click("#searchOpen");
+      await A.setValue("#searchBox", "flip");
+      await A.click("#searchResults .search-hit");
+      await sleep(300);
+      check("[notes] opening the hit shows the note", (await A.ev(`document.querySelector("#page-notes").classList.contains("active") && document.querySelector("#noteDlg").open`)) && (await A.value('#noteForm [name="text"]')) === "Keep, change, flip.");
+      await A.click("#noteDelete");
+      await A.click("#confirmYes");
+      check("[notes] deleting moves the note to Recently deleted", (await A.ls("studyflowNotes")).length === 4 && (await A.ls("studyflowTrash"))[0].kind === "note");
+      await A.nav("settings");
+      await A.click('[data-set-tab="data"]');
+      check("[notes] the trash lists it as a Note", /Fractions <b>rules<\/b>\s*Note · deleted today/.test(await A.text("#trashList")), await A.text("#trashList"));
+      await A.click("#trashList [data-restore]");
+      check("[notes] Restore brings the note back", (await A.ls("studyflowNotes")).some((n) => n.id === notes[2].id) && (await A.ls("studyflowNotes")).length === 5);
+      for (const m of ["work", "planning"]) { await A.click(`#wsSwitch [data-mode="${m}"]`); check(`[notes] ${m}: Notes is not in the sidebar`, await A.ev(`document.querySelector('.nav[data-page="notes"]').hidden`)); }
+      await A.click('#wsSwitch [data-mode="school"]');
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+      await A.nav("notes");
+      await sleep(250);
+      check("[notes] phone: the page fits the screen", (await A.ev(`document.documentElement.scrollWidth - innerWidth`)) <= 0);
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
-      check("[shell] StudyFlow groups its pages under four labels", same(await groups(), [["OVERVIEW", ["Dashboard", "Calendar", "All Assignments"]], ["ACADEMICS", ["My Classes", "Grade Tracker", "Flashcards"]], ["PRODUCTIVITY", ["Study Planner", "Focus Timer"]], ["OTHER", ["AI Study Assistant", "Settings"]]]), JSON.stringify(await groups()));
+      check("[shell] StudyFlow groups its pages under four labels", same(await groups(), [["OVERVIEW", ["Dashboard", "Calendar", "All Assignments"]], ["ACADEMICS", ["My Classes", "Grade Tracker", "Notes", "Flashcards"]], ["PRODUCTIVITY", ["Study Planner", "Focus Timer"]], ["OTHER", ["AI Study Assistant", "Settings"]]]), JSON.stringify(await groups()));
       check("[shell] the switcher shows the current workspace", same(await A.ev(`[...document.querySelectorAll("#wsSwitch button")].map((b) => [b.textContent, b.getAttribute("aria-pressed")])`), [["School", "true"], ["Work", "false"], ["DayDream", "false"]]));
       await A.click('#wsSwitch [data-mode="planning"]');
       check("[shell] the switcher opens DayDream and saves it", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "planning" && (await A.text(".brand b")) === "DayDream");
