@@ -1,4 +1,4 @@
-// Drives Daydream mode (stored as "planning") in headless Chrome over CDP, next to the build from before it existed.
+// Drives DayDream mode (stored as "planning") in headless Chrome over CDP, next to the build from before it existed.
 // Usage: node scripts/e2e-planning.js   (OLD_REF=<commit> picks the old build, SHOTS=<dir> also saves screenshots, ONLY=<text> runs only scenarios whose name contains it)
 const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
@@ -300,16 +300,27 @@ async function main() {
       errors.length = before;
     });
 
-    await scenario("[name] the mode is called Daydream", async () => {
+    await scenario("[name] the mode is called DayDream", async () => {
       await A.fresh(NEW, planning);
-      check("[name] mode button reads Daydream", (await A.text('#modeSeg [data-mode="planning"]')) === "Daydream");
-      check("[name] the name at the top reads Daydream", (await A.text(".brand b")) === "Daydream");
+      check("[name] mode button reads DayDream", (await A.text('#modeSeg [data-mode="planning"]')) === "DayDream");
+      check("[name] the name at the top reads DayDream", (await A.text(".brand b")) === "DayDream");
+      const logo = () => A.ev(`({ hat: document.querySelector("#hat").innerHTML.length, label: document.querySelector("#hat").getAttribute("aria-label"), tab: [...document.querySelectorAll("link[rel=icon]")].map((l) => l.getAttribute("href")), title: document.title })`);
+      const ddLogo = await logo();
+      check("[name] the tab shows the DayDream logo and title", ddLogo.tab.every((h) => h.startsWith("data:image/svg+xml,")) && decodeURIComponent(ddLogo.tab[0]).includes("#6f83df") && ddLogo.title === "DayDream — Planner" && ddLogo.label === "DayDream logo", JSON.stringify(ddLogo).slice(0, 300));
+      await A.setMode("school");
+      const schoolLogo = await logo();
+      check("[name] School gets the StudyFlow logo and tab back", same(schoolLogo.tab, ["icons/icon.svg", "icons/icon-192.png"]) && schoolLogo.title === "StudyFlow — Planner" && schoolLogo.label === "StudyFlow logo" && schoolLogo.hat !== ddLogo.hat, JSON.stringify(schoolLogo).slice(0, 300));
+      await A.setMode("planning");
+      await A.click('[data-set-tab="appearance"]');
+      await A.click('[data-dd-color="mint"]');
+      check("[name] the tab logo follows the DayDream color", decodeURIComponent((await logo()).tab[0]).includes("#45b394"));
+      await A.click('[data-dd-color="lavender"]');
       await A.setMode("school");
       check("[name] the name at the top reads StudyFlow in School", (await A.text(".brand b")) === "StudyFlow");
       await A.setMode("work");
       check("[name] the name at the top reads StudyFlow in Work", (await A.text(".brand b")) === "StudyFlow");
       await A.setMode("planning");
-      check("[name] eyebrow says Daydream", /DAYDREAM/.test(await A.text("#eyebrow")), await A.text("#eyebrow"));
+      check("[name] eyebrow says DayDream", /DAYDREAM/.test(await A.text("#eyebrow")), await A.text("#eyebrow"));
       const nav = await A.ev(`[...document.querySelectorAll(".nav[data-page]")].filter((b) => !b.hidden).map((b) => b.textContent.trim())`);
       check("[name] nav is Dashboard, Calendar, My Plans, Journal, Checklists, AI, Settings", same([...nav].sort(), ["AI", "Calendar", "Checklists", "Dashboard", "Journal", "My Plans", "Settings"]), JSON.stringify(nav));
       const visible = await A.ev(`document.body.innerText`);
@@ -321,7 +332,7 @@ async function main() {
       check("[name] stored mode is still planning", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "planning" && visible.length > 0);
     });
 
-    await scenario("[look] Daydream palette comes and goes with the mode", async () => {
+    await scenario("[look] DayDream palette comes and goes with the mode", async () => {
       const designs = {
         mint: { accent: "#2fa57c", background: "#e6f7ef", background2: "#dff3ea", cards: "#ffffff", text: "#1f4a3c" },
         night: { accent: "#8ea8ff", background: "#0f1535", background2: "#1a2150", cards: "#1b2347", text: "#e8ecff" },
@@ -333,11 +344,11 @@ async function main() {
         check(`[look] ${name}: School starts on the student's design`, before.theme === name && before["--blue"] === colors.accent, JSON.stringify(before));
         await A.setMode("planning");
         const dd = await A.themeVars();
-        check(`[look] ${name}: Daydream mode shows Daydream's accent`, dd["--blue"] === DD_ACCENT && dd.theme === "daydream", JSON.stringify(dd));
+        check(`[look] ${name}: DayDream mode shows DayDream's accent`, dd["--blue"] === DD_ACCENT && dd.theme === "daydream", JSON.stringify(dd));
         const lum = await A.ev(`(() => { const p = (s) => s.match(/[\\d.]+/g).slice(0, 3).map(Number); const [r, g, b] = p(getComputedStyle(document.querySelector(".card")).backgroundColor); const [x, y, z] = p(getComputedStyle(document.querySelector(".card")).color); return [(r + g + b) / 3, (x + y + z) / 3]; })()`);
-        check(`[look] ${name}: Daydream mode is light cards with dark text`, lum[0] > 230 && lum[1] < 110, JSON.stringify(lum));
+        check(`[look] ${name}: DayDream mode is light cards with dark text`, lum[0] > 230 && lum[1] < 110, JSON.stringify(lum));
         await A.reload();
-        check(`[look] ${name}: Daydream palette survives a reload`, (await A.themeVars())["--blue"] === DD_ACCENT);
+        check(`[look] ${name}: DayDream palette survives a reload`, (await A.themeVars())["--blue"] === DD_ACCENT);
         await A.setMode("school");
         const after = await A.themeVars();
         check(`[look] ${name}: back in School every theme value is what it was`, same(before, after), `before ${JSON.stringify(before)} after ${JSON.stringify(after)}`);
@@ -345,13 +356,13 @@ async function main() {
       }
     });
 
-    await scenario("[color] Daydream colors and the calendar", async () => {
+    await scenario("[color] DayDream colors and the calendar", async () => {
       const today = await A.ev(`(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })()`);
       await A.fresh(NEW, { ...planning, studyflowEvents: [{ id: 71, title: "Picnic", date: today, start: "", end: "", note: "", mode: "planning", type: "outing", place: "", emoji: "🧺" }], studyflowPlanning: { v: 1, todos: [{ id: 72, title: "Pack basket", due: today, priority: "Medium", note: "", done: false }] } });
       const look = () => A.ev(`(() => { const h = getComputedStyle(document.documentElement); const k = (s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).getPropertyValue("--k").trim() : null; }; return { dd: document.documentElement.dataset.dd, blue: h.getPropertyValue("--blue").trim(), planChip: k(".day.today .chip.k-event"), todoChip: k(".day.today .chip.k-plan"), pressed: [...document.querySelectorAll('[data-dd-color][aria-pressed="true"]')].map((b) => b.dataset.ddColor), patterns: getComputedStyle(document.body).backgroundImage, font: getComputedStyle(document.body).fontFamily, bg: getComputedStyle(document.body).backgroundColor }; })()`);
       await A.nav("calendar");
       const first = await look();
-      check("[color] Daydream starts lavender and the calendar wears it", first.dd === "lavender" && first.blue === "#6f83df" && first.planChip === "#6f83df" && first.todoChip === "#536dcf", JSON.stringify(first));
+      check("[color] DayDream starts lavender and the calendar wears it", first.dd === "lavender" && first.blue === "#6f83df" && first.planChip === "#6f83df" && first.todoChip === "#536dcf", JSON.stringify(first));
       const want = { pink: ["#e07aa5", "#c2527f"], sky: ["#4f9fe0", "#2c7cc0"], mint: ["#45b394", "#2a8c70"], peach: ["#ee9460", "#c96d38"], lavender: ["#6f83df", "#536dcf"] };
       const tint = (accent) => "rgb(" + [1, 3, 5].map((i) => Math.round(parseInt(accent.slice(i, i + 2), 16) * 0.09 + 255 * 0.91)).join(", ") + ")";
       const seen = new Set();
@@ -378,13 +389,13 @@ async function main() {
       await A.nav("calendar");
       const again = await look();
       check("[color] the color is remembered after a reload", again.dd === "pink" && again.blue === "#e07aa5" && again.planChip === "#e07aa5", JSON.stringify(again));
-      check("[color] the calendar key swatches cannot be edited in Daydream", await A.ev(`[...document.querySelectorAll("[data-kcolor]")].filter((i) => i.offsetParent !== null).every((i) => i.disabled)`));
+      check("[color] the calendar key swatches cannot be edited in DayDream", await A.ev(`[...document.querySelectorAll("[data-kcolor]")].filter((i) => i.offsetParent !== null).every((i) => i.disabled)`));
       await A.setMode("school");
       const school = await A.ev(`({ blue: getComputedStyle(document.documentElement).getPropertyValue("--blue").trim(), theme: document.documentElement.dataset.theme ?? null, editable: [...document.querySelectorAll("[data-kcolor]")].every((i) => !i.disabled) })`);
       check("[color] School keeps its own color and editable calendar colors", school.blue !== "#e07aa5" && school.theme !== "daydream" && school.editable, JSON.stringify(school));
     });
 
-    await scenario("[icons] Daydream shows no emojis", async () => {
+    await scenario("[icons] DayDream shows no emojis", async () => {
       const today = await A.ev(`(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })()`);
       await A.fresh(NEW, { ...planning, studyflowEvents: [{ id: 81, title: "Old beach trip", date: today, start: "", end: "", note: "", mode: "planning", type: "trip", place: "Pier", emoji: "🏖️" }], studyflowPlanning: { v: 1, todos: [{ id: 82, title: "Sunscreen", due: today, priority: "Medium", note: "", done: false, planId: 81 }] }, studyflowMemories: [{ id: "m1", title: "Old memory", date: today, mood: "Happy ☀️", text: "Nice day", tags: ["sun"], hasPhoto: false }] });
       const found = () => A.ev(`(() => { const css = [":before", ":after"].flatMap((p) => [...document.querySelectorAll("main *, aside *")].filter((e) => e.getClientRects().length).map((e) => getComputedStyle(e, p).content)).filter((c) => c && c !== "none" && c !== "normal").join(" "); const text = document.querySelector(".app").innerText + " " + document.querySelector("#modalBg").innerText + " " + (document.querySelector(".toast")?.innerText || "") + " " + css; return [...new Set(text.match(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{25A0}-\u{25FF}\u{FE0F}]/gu) || [])].join(" "); })()`);
@@ -412,21 +423,21 @@ async function main() {
       check("[icons] the dashboard tiles, hero and covers use drawn icons", (await A.count(".dd-stat-icon svg")) === 4 && (await A.count(".dd-hero-art svg")) === 1 && (await A.count("#dashPlanGrid .dd-cover svg")) === 1);
     });
 
-    await scenario("[look] Settings cannot change the saved design in Daydream mode", async () => {
+    await scenario("[look] Settings cannot change the saved design in DayDream mode", async () => {
       await A.fresh(NEW, { studyflowMode: "school", studyflowColors: { accent: "#2fa57c", background: "#e6f7ef", background2: "#dff3ea", cards: "#ffffff", text: "#1f4a3c" } });
       const saved = await A.ev(`localStorage.getItem("studyflowColors")`);
       const controls = () => A.ev(`[...document.querySelectorAll("#setPanel-appearance input, #setPanel-appearance button")].filter((e) => e.offsetParent !== null).length`);
       const panel = () => A.ev(`document.querySelector("#setPanel-appearance").innerText`);
       await A.setMode("planning");
       await A.click('[data-set-tab="appearance"]');
-      check("[look] Daydream mode shows only its five color buttons in Settings", (await controls()) === 5 && (await A.count("#setPanel-appearance [data-dd-color]")) === 5, `${await controls()} visible`);
-      check("[look] Appearance says the Daydream color leaves the School and Work design alone", /Pick a color for Daydream/.test(await panel()) && /School and Work design is not changed/.test(await panel()), await panel());
+      check("[look] DayDream mode shows only its five color buttons in Settings", (await controls()) === 5 && (await A.count("#setPanel-appearance [data-dd-color]")) === 5, `${await controls()} visible`);
+      check("[look] Appearance says the DayDream color leaves the School and Work design alone", /Pick a color for DayDream/.test(await panel()) && /School and Work design is not changed/.test(await panel()), await panel());
       await A.click('[data-dd-color="mint"]');
       check("[look] studyflowColors is unchanged", (await A.ev(`localStorage.getItem("studyflowColors")`)) === saved);
       for (const m of ["school", "work"]) {
         await A.setMode(m);
         await A.click('[data-set-tab="appearance"]');
-        check(`[look] ${m}: the color controls are back and the Daydream note is gone`, (await controls()) > 5 && !/Daydream/.test(await panel()), `${await controls()} ${await panel()}`);
+        check(`[look] ${m}: the color controls are back and the DayDream note is gone`, (await controls()) > 5 && !/DayDream/.test(await panel()), `${await controls()} ${await panel()}`);
       }
     });
 
@@ -449,7 +460,7 @@ async function main() {
       await A.fresh(NEW, seedV1);
       await A.nav("plan");
       await A.click("#addPlan");
-      check("[2] plan form has the Daydream fields", same(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`), ["title", "type", "date", "start", "end", "place", "note", "icon"]), JSON.stringify(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`)));
+      check("[2] plan form has the DayDream fields", same(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`), ["title", "type", "date", "start", "end", "place", "note", "icon"]), JSON.stringify(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((i) => i.name)`)));
       await A.setValue('#modalForm [name="title"]', "<b>Ski trip</b>");
       await A.setValue('#modalForm [name="type"]', "event");
       check("[2] icon follows the type default", (await A.value('#modalForm [name="icon"]')) === "balloon");
@@ -523,7 +534,7 @@ async function main() {
       await A.send("Emulation.clearDeviceMetricsOverride");
     });
 
-    await scenario("[3] calendar in Daydream mode", async () => {
+    await scenario("[3] calendar in DayDream mode", async () => {
       await A.fresh(NEW, planning);
       await A.nav("plan");
       await A.newPlan({ title: "Today thing", type: "outing", date: today, start: "18:00" });
@@ -648,7 +659,7 @@ async function main() {
       await A.submit("#modalForm");
       await A.nav("calendar");
       check("a to-do with a due date still shows on the calendar", (await A.texts(".day.today .chip.k-plan")).includes("Renew pass"), JSON.stringify(await A.texts(".day.today .chip")));
-      check("Daydream has no Focus Timer in the sidebar or in Settings", await A.ev(`document.querySelector('.nav[data-page="focus"]').hidden && document.querySelector("#featuresCard").offsetParent === null`));
+      check("DayDream has no Focus Timer in the sidebar or in Settings", await A.ev(`document.querySelector('.nav[data-page="focus"]').hidden && document.querySelector("#featuresCard").offsetParent === null`));
       check("AI summary still lists open to-dos and upcoming plans", (await A.ev(`sfPlanSummary()`)).includes("Buy stamps") && (await A.ev(`sfEventList().join("|")`)).includes("Dentist"));
     });
 
