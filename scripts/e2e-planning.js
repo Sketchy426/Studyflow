@@ -247,7 +247,7 @@ async function main() {
   const BASE = `http://127.0.0.1:${server.address().port}`;
   const NEW = `${BASE}/index.html`;
   const OLD = `${BASE}/old-build.html`;
-  const chrome = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run", "--window-size=1280,900", "about:blank"], { stdio: "ignore" });
+  const chrome = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run", "--window-size=1280,900", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream", "about:blank"], { stdio: "ignore" });
   try {
     const port = await devtoolsPort();
     const target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === "page");
@@ -393,6 +393,41 @@ async function main() {
       await A.setMode("school");
       const school = await A.ev(`({ blue: getComputedStyle(document.documentElement).getPropertyValue("--blue").trim(), theme: document.documentElement.dataset.theme ?? null, editable: [...document.querySelectorAll("[data-kcolor]")].every((i) => !i.disabled) })`);
       check("[color] School keeps its own color and editable calendar colors", school.blue !== "#e07aa5" && school.theme !== "daydream" && school.editable, JSON.stringify(school));
+    });
+
+    await scenario("[camera] the journal can take a photo with the camera", async () => {
+      await A.fresh(NEW, planning);
+      await A.nav("journal");
+      const cam = () => A.ev(`(() => { const d = document.querySelector("#camDialog"), v = document.querySelector("#camVideo"), p = document.querySelector("#memoryPreview"); return { open: d.open, live: !!v.srcObject && v.srcObject.getTracks().some((t) => t.readyState === "live"), width: v.videoWidth, preview: !p.hidden && p.naturalWidth > 0, msg: document.querySelector("#journalMsg").textContent }; })()`);
+      check("[camera] the form has Take a photo next to Add a photo", (await A.texts("#memoryForm .dd-photo-pick")).map((t) => t.trim()).join("|") === "Take a photo|Add a photo");
+      await A.click("#memoryCamera");
+      await sleep(1500);
+      const opened = await cam();
+      check("[camera] the button opens a live camera view", opened.open && opened.live && opened.width > 0, JSON.stringify(opened));
+      if (process.env.SHOTS) await A.shot(require("path").join(process.env.SHOTS, "camera.png"), 1280, 900);
+      await A.ev(`window.__track = document.querySelector("#camVideo").srcObject.getTracks()[0]`);
+      await A.click("#camCancel");
+      const cancelled = await cam();
+      check("[camera] Cancel closes the view, turns the camera off and adds no photo", !cancelled.open && !cancelled.live && !cancelled.preview && (await A.ev(`window.__track.readyState`)) === "ended", JSON.stringify(cancelled));
+      await A.click("#memoryCamera");
+      await sleep(1500);
+      await A.click("#camSnap");
+      await sleep(900);
+      const snapped = await cam();
+      check("[camera] Take photo closes the view, turns the camera off and shows the photo", !snapped.open && !snapped.live && snapped.preview, JSON.stringify(snapped));
+      await A.saveMemory({ "#memoryTitle": "Camera day" });
+      const saved = (await A.ls("studyflowMemories"))[0];
+      check("[camera] the photo is saved with the memory and shown on its card", saved.title === "Camera day" && saved.hasPhoto === true && (await A.ev(`(() => { const i = document.querySelector("#memoryGrid .dd-memory img"); return !!i && i.naturalWidth > 0; })()`)), JSON.stringify(saved));
+      await A.ev(`navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException("no", "NotAllowedError"))`);
+      await A.click("#memoryCamera");
+      await sleep(300);
+      const blocked = await cam();
+      check("[camera] a blocked camera gives a message and no empty view", !blocked.open && /blocked/.test(blocked.msg), JSON.stringify(blocked));
+      await A.ev(`navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException("no", "NotFoundError"))`);
+      await A.click("#memoryCamera");
+      await sleep(300);
+      const none = await cam();
+      check("[camera] a device with no camera gives a message", !none.open && /No camera/.test(none.msg), JSON.stringify(none));
     });
 
     await scenario("[icons] DayDream shows no emojis", async () => {
