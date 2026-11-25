@@ -418,6 +418,30 @@ async function main() {
       }
     });
 
+    await scenario("[games] the game room follows the appearance colors", async () => {
+      const presets = { rose: ["#d9578b", "#fff1f6", "#ffe3ee", "#ffffff", "#5a2a3e"], mint: ["#2fa57c", "#e6f7f0", "#e2f3fb", "#ffffff", "#24504a"], custom: ["#b0409a", "#fbf0fa", "#f3e3f6", "#ffffff", "#40203a"], night: ["#8ea8ff", "#0f1531", "#1d1742", "#1a2145", "#e4e9ff"] };
+      const paint = () => A.ev(`(() => { const c = (s, p) => { const e = document.querySelector(s); return e ? getComputedStyle(e)[p] : "missing " + s; }; return [c(".game-tabs", "backgroundColor"), c(".game-tabs button:not(.on)", "color"), c(".secret", "backgroundImage"), c(".secret", "borderTopColor"), c(".game-tabs button:not(.on) .game-ico", "backgroundColor"), c(".game-ico", "color"), c(".game-tabs button.on .game-ico", "backgroundImage"), c(".big-book", "boxShadow"), c(".up-icon", "backgroundColor"), c(".wd-tile", "borderTopColor"), c(".wd-key", "backgroundColor"), c(".wd-key", "color"), c(".ty-text", "backgroundColor"), c(".ty-text", "borderTopColor")]; })()`);
+      const seen = [];
+      for (const [name, [accent, background, background2, cards, text]] of Object.entries(presets)) {
+        await A.fresh(NEW, { studyflowColors: { accent, background, background2, cards, text } });
+        for (let i = 0; i < 5; i++) await A.click("#hat");
+        await sleep(400);
+        const p = await paint();
+        seen.push(p);
+        check(`[games] ${name}: every part of the game room is drawn`, (await A.ev(`document.querySelector("#page-secret").classList.contains("active")`)) && p.every((v) => !v.startsWith("missing")), JSON.stringify(p));
+        if (SHOTS) for (const g of ["clicker", "wordle", "typing"]) { await A.click(`[data-game="${g}"]`); await sleep(300); await A.shot(path.join(SHOTS, `games-${name}-${g}.png`), 1280, 900); }
+      }
+      const differs = seen[0].map((_, i) => new Set(seen.map((p) => p[i])).size);
+      check("[games] every colored part is different in each of four appearances", differs.every((n) => n === 4), JSON.stringify(differs) + " " + JSON.stringify(seen[0]));
+      await A.fresh(NEW, {});
+      for (let i = 0; i < 5; i++) await A.click("#hat");
+      await A.click('[data-game="wordle"]');
+      for (const k of [..."crane", "enter"]) await A.click(`#wdKb [data-key="${k}"]`);
+      await sleep(2500);
+      const scored = await A.ev(`[...document.querySelectorAll(".wd-row")][0] ? [...[...document.querySelectorAll(".wd-row")][0].children].map((t) => [t.className, getComputedStyle(t).borderTopColor, getComputedStyle(t).backgroundColor]) : []`);
+      check("[games] scored Wordle tiles keep their green, yellow and gray", scored.length === 5 && scored.every(([cls, border, bg]) => /\b[gyx]\b/.test(cls) && border === bg && ["rgb(95, 184, 138)", "rgb(232, 184, 74)", "rgb(169, 184, 204)"].includes(bg)), JSON.stringify(scored));
+    });
+
     await scenario("[camera] the journal can take a photo with the camera", async () => {
       await A.fresh(NEW, planning);
       await A.nav("journal");
