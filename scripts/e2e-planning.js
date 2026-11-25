@@ -615,6 +615,38 @@ async function main() {
       await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
     });
 
+    await scenario("[calendar] other workspaces can be shown on one calendar", async () => {
+      const today = await A.ev(`(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })()`);
+      const seed = { studyflowData: { v: 1, displayName: "", sessions: [], classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [], weights: {}, credits: 1 }], tasks: [{ id: 4001, title: "Math sheet", classId: 2001, type: "Homework", due: today, points: 10, priority: "High", done: false }] },
+        studyflowEvents: [{ id: 81, title: "Picnic", date: today, start: "13:00", end: "", note: "", mode: "planning", type: "outing", place: "Park", icon: "sun" }],
+        studyflowPlanning: { v: 1, todos: [{ id: 91, title: "Buy bread", due: today, priority: "Medium", note: "", done: false }] },
+        studyflowWork: { v: 1, jobs: [{ id: 1, name: "Cafe", rate: 15, color: "#4f8fe8" }], shifts: [{ id: 2, jobId: 1, date: today, start: "09:00", end: "12:00", note: "" }], todos: [] } };
+      await A.fresh(NEW, seed);
+      await A.nav("calendar");
+      const chips = () => A.ev(`[...document.querySelectorAll(".day.today .chip")].map((c) => [c.textContent, c.classList.contains("k-other")])`);
+      const before = await A.snapshot();
+      check("[calendar] by default only this workspace's items show", same(await chips(), [["Math sheet", false]]) && same(await A.texts("#calAlso button"), ["Work", "DayDream"]), JSON.stringify(await chips()));
+      await A.click('#calAlso [data-also="planning"]');
+      check("[calendar] turning on DayDream adds its plan and dated to-do, outlined", same(await chips(), [["Math sheet", false], ["Picnic 1:00 PM", true], ["Buy bread", true]]), JSON.stringify(await chips()));
+      await A.click(".day.today");
+      const list = await A.text("#calDay");
+      check("[calendar] the day list names the workspace and offers no delete for visitors", /Picnic 1:00 PM\s*DayDream · Plan/.test(list) && /Buy bread\s*DayDream · To-do/.test(list) && (await A.count("#calDay [data-cal-event-del]")) === 0, list);
+      await A.click('#calAlso [data-also="work"]');
+      check("[calendar] turning on Work adds the shift", (await chips()).some((c) => c[0] === "Cafe 9:00 AM–12:00 PM" && c[1]) || /Cafe 9:00 AM–12:00 PM\s*Work · Shift/.test(await A.text("#calDay")), JSON.stringify(await chips()) + (await A.text("#calDay")));
+      check("[calendar] the choice is a device setting and changes no synced data", same(await A.snapshot(), before) && (await A.ev(`localStorage.getItem("sfLocal.calAlso")`)) === '{"planning":true,"work":true}');
+      if (SHOTS) await A.shot(path.join(SHOTS, "calendar-also-1280.png"), 1280, 900);
+      await A.reload();
+      await A.nav("calendar");
+      check("[calendar] the choice survives a reload", (await chips()).length === 3 && (await A.ev(`document.querySelector('#calAlso [data-also="work"]').getAttribute("aria-pressed")`)) === "true", JSON.stringify(await chips()));
+      await A.click('#wsSwitch [data-mode="planning"]');
+      await A.nav("calendar");
+      const dd = await chips();
+      check("[calendar] in DayDream its own plan is not doubled, and StudyFlow can be shown", dd.filter((c) => c[0].startsWith("Picnic")).length === 1 && dd.find((c) => c[0].startsWith("Picnic"))[1] === false && same(await A.texts("#calAlso button"), ["StudyFlow", "Work"]), JSON.stringify(dd));
+      await A.click('#calAlso [data-also="school"]');
+      await A.click(".day.today");
+      check("[calendar] StudyFlow work shows in DayDream's calendar", /Math sheet\s*StudyFlow · Homework/.test(await A.text("#calDay")), await A.text("#calDay"));
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
