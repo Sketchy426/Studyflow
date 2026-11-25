@@ -538,6 +538,50 @@ async function main() {
       check("[safety] the page still works after the probe", (await A.count(".page.active")) === 1);
     });
 
+    await scenario("[home] the StudyFlow dashboard", async () => {
+      const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+      const g = (id, score) => ({ id, title: "Score " + id, type: "Homework", score, total: 10, date: day(-3) });
+      const task = (id, title, due, type, priority) => ({ id, title, classId: 2001, type, due, points: 10, priority, done: false });
+      const seed = { studyflowData: { v: 1, displayName: "Sam", sessions: [{ id: 3001, title: "Review", subject: "Math", date: day(2), time: "", duration: 30, note: "" }],
+        classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [g(1, 6), g(2, 6)], weights: {}, credits: 1 }, { id: 2002, name: "Art", teacher: "", icon: "A", grades: [g(3, 9), g(4, 10)], weights: {}, credits: 1 }],
+        tasks: [task(4001, "Far away", day(20), "Homework", "Medium"), task(4002, "Tomorrow sheet", day(1), "Homework", "Medium"), task(4003, "Unit test", day(3), "Test", "Medium"), task(4004, "Today sheet", day(0), "Homework", "High"), task(4005, "Late essay", day(-2), "Project", "Low")] },
+        studyflowFocus: { [day(0)]: 25, [day(-1)]: 30 } };
+      await A.fresh(NEW, seed);
+      const hello = await A.text("#dashHello");
+      check("[home] the welcome names the student and sums up today", /Good (morning|afternoon|evening), Sam/.test(hello) && /1 overdue/.test(hello) && /1 due today/.test(hello) && /next test in 3 days/.test(hello), hello);
+      const ranked = await A.ev(`sfNextSteps().map((s) => s.title)`);
+      check("[home] next steps rank overdue, today, the test, tomorrow, then the weakest class, and leave out far work", same(ranked, ["Late essay", "Today sheet", "Unit test", "Tomorrow sheet", "Review Math"]), JSON.stringify(ranked));
+      check("[home] the card shows the top four with a reason each", same(await A.texts("#dashNext .step-body b"), ["Late essay", "Today sheet", "Unit test", "Tomorrow sheet"]) && /Overdue, it was due 2 days ago/.test(await A.text("#dashNext .step.over")) && (await A.count("#dashNext .step.over")) === 1);
+      const week = await A.ev(`[...document.querySelectorAll("#dashNext .week button")].map((b) => [b.className.trim(), b.querySelector("i").textContent])`);
+      check("[home] the week strip has seven days, marks today and shows the test", week.length === 7 && week[0][0] === "now" && week[0][1] === "1 due" && week[3][0] === "has-test" && week[3][1] === "Test" && week[1][1] === "1 due" && week[2][1] === "", JSON.stringify(week));
+      check("[home] today's work is listed under the week", /Today sheet · Math\s*High/.test(await A.text("#dashToday")) && !/Tomorrow/.test(await A.text("#dashToday")), await A.text("#dashToday"));
+      const more = await A.text("#dashMore");
+      check("[home] tests show a countdown", /Unit test · Math\s*in 3 days/.test(more), more);
+      check("[home] study time comes from the focus log", /55m/.test(more) && /2 days/.test(more) && /Study sessions planned this week\s*1/.test(more), more);
+      await A.nav("grades");
+      const gpa = await A.text("#gpaValue");
+      await A.nav("dashboard");
+      check("[home] the grade summary shows the same GPA as the Grade Tracker", gpa !== "—" && (await A.text("#dashMore .big-num")).startsWith(gpa) && /Needs attention · Math\s*60%/.test(more) && /Strongest · Art\s*95%/.test(more), gpa + " | " + more);
+      if (SHOTS) await A.shot(path.join(SHOTS, "home-school-1280.png"), 1280, 900);
+      await A.click('#dashNext [data-complete-step="4005"]');
+      check("[home] Done on a step finishes the task and brings up the next one", (await A.ls("studyflowData")).tasks.find((t) => t.id === 4005).done === true && same(await A.texts("#dashNext .step-body b"), ["Today sheet", "Unit test", "Tomorrow sheet", "Review Math"]));
+      await A.click('#dashHello [data-quick="task"]');
+      check("[home] a quick action opens the assignment form", (await A.text("#modalTitle")) === "Add assignment or task");
+      await A.press("Escape");
+      await A.ev(`document.querySelector("#modalBg").style.display = "none"`);
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+      await sleep(250);
+      check("[home] phone: nothing scrolls sideways", (await A.ev(`document.documentElement.scrollWidth - innerWidth`)) <= 0);
+      if (SHOTS) await A.shot(path.join(SHOTS, "home-school-393.png"), 393, 852);
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+      for (const m of ["work", "planning"]) {
+        await A.click(`#wsSwitch [data-mode="${m}"]`);
+        check(`[home] ${m}: the school dashboard parts are hidden`, await A.ev(`["#dashHello", "#dashNext", "#dashMore"].every((s) => document.querySelector(s).getClientRects().length === 0)`));
+      }
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [], weights: {}, credits: 1 }], tasks: [], sessions: [] } });
+      check("[home] an empty planner shows friendly empty states", /all caught up/.test(await A.text("#dashNext")) && /No tests coming up/.test(await A.text("#dashMore")) && /Add a grade/.test(await A.text("#dashMore")) && /^Good (morning|afternoon|evening)\s*0 due today/.test((await A.text("#dashHello")).replace(/\n/g, " ")), await A.text("#dashHello"));
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
