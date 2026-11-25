@@ -647,6 +647,60 @@ async function main() {
       check("[calendar] StudyFlow work shows in DayDream's calendar", /Math sheet\s*StudyFlow · Homework/.test(await A.text("#calDay")), await A.text("#calDay"));
     });
 
+    await scenario("[task] assignments have a time, points earned, details, a link and steps", async () => {
+      const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", sessions: [], classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [], weights: {}, credits: 1 }, { id: 2002, name: "Art", teacher: "", icon: "A", grades: [], weights: {}, credits: 1 }],
+        tasks: [{ id: 4001, title: "Imported lab", classId: 2001, type: "Quiz", due: day(2), points: 20, priority: "Medium", done: false, source: "classroom", gcId: "g1", desc: "From class", url: "https://classroom.google.com/x", detailFrom: "api" }, { id: 4002, title: "Afternoon thing", classId: 2001, type: "Homework", due: day(1), points: "", priority: "High", done: false, time: "15:00" }] } });
+      await A.nav("assignments");
+      await A.ev(`(() => { const s = document.querySelector("#dueFilter"); s.value = "all"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+      await A.click("#addTask");
+      check("[task] the form has the new fields", same(await A.ev(`[...document.querySelectorAll("#modalFields [name]")].map((e) => e.name)`), ["title", "classId", "type", "priority", "points", "due", "time", "earned", "notes", "link"]));
+      for (const [n, v] of Object.entries({ title: "Morning sheet", points: "10", due: day(1), time: "09:30", earned: "8", notes: "Pages 4 to 6, see https://example.com/help", link: "https://example.com/sheet" })) await A.setValue(`#modalForm [name="${n}"]`, v);
+      await A.ev(`document.querySelector('#modalForm [name="priority"]').value = "High"`);
+      await A.submit("#modalForm");
+      const saved = (await A.ls("studyflowData")).tasks.find((t) => t.title === "Morning sheet");
+      check("[task] a new assignment saves its time, points earned, details and link", !!saved && saved.time === "09:30" && saved.earned === 8 && saved.notes.startsWith("Pages 4") && same(saved.myLinks, [{ title: "", url: "https://example.com/sheet" }]) && saved.points === 10, JSON.stringify(saved));
+      const rows = await A.texts("#assignmentList .item h4");
+      check("[task] on the same day the earlier time comes first", rows.indexOf("Morning sheet") >= 0 && rows.indexOf("Morning sheet") < rows.indexOf("Afternoon thing"), JSON.stringify(rows));
+      const row = await A.ev(`[...document.querySelectorAll("#assignmentList .item")].find((r) => r.textContent.includes("Morning sheet")).querySelector("p").textContent`);
+      check("[task] the row shows the time and the points earned", /at 9:30 AM/.test(row) && /8 of 10 points earned/.test(row), row);
+      await A.click(`[data-details="${saved.id}"]`);
+      check("[task] the details panel shows the details with a working link, and the link", (await A.count('#tdMine .td-desc a[href="https://example.com/help"]')) === 1 && (await A.count('#tdMine .td-links a[href="https://example.com/sheet"]')) === 1 && !(await A.ev(`[...document.querySelectorAll("#tdBody > p.muted")].some((p) => !p.hidden)`)));
+      for (const step of ["Outline", "First draft"]) { await A.setValue("#subAdd input", step); await A.submit("#subAdd"); }
+      await A.click(`#tdMine .sub input`);
+      check("[task] steps can be added and ticked", same(await A.ev(`[...document.querySelectorAll("#tdMine .sub")].map((s) => [s.textContent.replace("×", "").trim(), s.classList.contains("done")])`), [["Outline", true], ["First draft", false]]) && /1 of 2 done/.test(await A.text("#tdMine .td-sec")));
+      if (SHOTS) await A.shot(path.join(SHOTS, "task-details-1280.png"), 1280, 900);
+      await A.click("#tdClose");
+      check("[task] the row shows the step count", /1 of 2 steps/.test(await A.text("#assignmentList")));
+      await A.reload();
+      const kept = (await A.ls("studyflowData")).tasks.find((t) => t.id === saved.id);
+      check("[task] steps and fields survive a reload", kept.subs.length === 2 && kept.subs[0].done === true && kept.time === "09:30" && kept.notes === saved.notes, JSON.stringify(kept));
+      await A.nav("assignments");
+      await A.ev(`(() => { const s = document.querySelector("#dueFilter"); s.value = "all"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+      await A.click('[data-edit-task="4001"]');
+      check("[task] Edit opens the form filled in, keeping an imported type", (await A.text("#modalTitle")) === "Edit assignment" && (await A.value('#modalForm [name="title"]')) === "Imported lab" && (await A.value('#modalForm [name="type"]')) === "Quiz" && (await A.value('#modalForm [name="due"]')) === day(2));
+      await A.setValue('#modalForm [name="title"]', "Imported lab, renamed");
+      await A.setValue('#modalForm [name="classId"]', "2002");
+      await A.setValue('#modalForm [name="notes"]', "My own note");
+      await A.submit("#modalForm");
+      const all = (await A.ls("studyflowData")).tasks, edited = all.find((t) => t.id === 4001);
+      check("[task] editing changes the assignment in place and keeps what was imported", all.length === 3 && edited.title === "Imported lab, renamed" && edited.classId === 2002 && edited.notes === "My own note" && edited.desc === "From class" && edited.gcId === "g1" && edited.url === "https://classroom.google.com/x" && edited.type === "Quiz" && edited.points === 20, JSON.stringify(edited));
+      await A.click('[data-details="4001"]');
+      check("[task] an imported assignment shows both its description and my note", /From class/.test(await A.text("#tdBody")) && /My own note/.test(await A.text("#tdMine")) && (await A.count("#tdActions #tdEdit")) === 1);
+      await A.click("#tdEdit");
+      check("[task] Edit inside the panel closes it and opens the form", (await A.text("#modalTitle")) === "Edit assignment" && !(await A.ev(`document.querySelector("#detailsBg").classList.contains("show")`)));
+      await A.setValue('#modalForm [name="notes"]', "");
+      await A.submit("#modalForm");
+      check("[task] clearing a field removes it", !("notes" in (await A.ls("studyflowData")).tasks.find((t) => t.id === 4001)));
+      await A.ev(`sfSearch("outline").map((h) => h.title)`).then((r) => check("[task] search finds an assignment by a step", same(r, ["Morning sheet"]), JSON.stringify(r)));
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+      await A.click(`[data-details="${saved.id}"]`);
+      await sleep(250);
+      check("[task] phone: the details panel fits the screen", await A.ev(`(() => { const r = document.querySelector("#detailsBg .modal").getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1 && document.documentElement.scrollWidth <= innerWidth; })()`));
+      if (SHOTS) await A.shot(path.join(SHOTS, "task-details-393.png"), 393, 852);
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
