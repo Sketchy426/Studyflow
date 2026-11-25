@@ -582,6 +582,39 @@ async function main() {
       check("[home] an empty planner shows friendly empty states", /all caught up/.test(await A.text("#dashNext")) && /No tests coming up/.test(await A.text("#dashMore")) && /Add a grade/.test(await A.text("#dashMore")) && /^Good (morning|afternoon|evening)\s*0 due today/.test((await A.text("#dashHello")).replace(/\n/g, " ")), await A.text("#dashHello"));
     });
 
+    await scenario("[search] one search across every workspace", async () => {
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", sessions: [{ id: 3001, title: "Beach vocabulary drill", subject: "Spanish", date: "2026-12-01", time: "", duration: 30, note: "" }], classes: [{ id: 2001, name: "Spanish", teacher: "Ms Vega", icon: "S", grades: [], weights: {}, credits: 1 }], tasks: [{ id: 4001, title: "Essay about the beach", classId: 2001, type: "Homework", due: "2026-12-02", points: 10, priority: "High", done: false }] },
+        studyflowEvents: [{ id: 81, title: "Beach trip", date: "2026-12-20", start: "", end: "", note: "bring towels", mode: "planning", type: "trip", place: "Pier", icon: "sun" }, { id: 82, title: "Dentist", date: "2026-12-03", start: "", end: "", note: "", mode: "work" }],
+        studyflowPlanning: { v: 1, todos: [{ id: 91, title: "Sunscreen for the beach", due: "", priority: "Medium", note: "", done: false, planId: 81 }] },
+        studyflowMemories: [{ id: "m1", title: "Sunset", date: "2026-11-01", mood: "Happy", text: "We walked on the beach", tags: ["sea"], hasPhoto: false }],
+        studyflowWork: { v: 1, jobs: [{ id: 1, name: "Beach cafe", rate: 15, color: "#4f8fe8" }], shifts: [], todos: [] } });
+      const hits = await A.ev(`sfSearch("beach").map((h) => h.ws + ":" + h.kind + ":" + h.title)`);
+      check("[search] finds matches in all three workspaces: this workspace first, titles that start with the word, then other titles, then text", same(hits, ["school:Study session:Beach vocabulary drill", "school:Assignment:Essay about the beach", "work:Job:Beach cafe", "planning:Plan:Beach trip", "planning:Checklist item:Sunscreen for the beach", "planning:Memory:Sunset"]), JSON.stringify(hits));
+      check("[search] every word must match", same(await A.ev(`sfSearch("beach essay").map((h) => h.title)`), ["Essay about the beach"]) && (await A.ev(`sfSearch("zebra").length`)) === 0 && (await A.ev(`sfSearch("   ").length`)) === 0);
+      await A.ev(`dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }))`);
+      check("[search] Ctrl+K opens the search box with the cursor in it", await A.ev(`document.querySelector("#searchDlg").open && document.activeElement.id === "searchBox"`));
+      await A.setValue("#searchBox", "towels");
+      check("[search] typing lists hits under their workspace", same(await A.texts("#searchResults .search-group"), ["DAYDREAM"]) && same(await A.texts("#searchResults .search-hit b"), ["Beach trip"]), await A.text("#searchResults"));
+      if (SHOTS) { await A.setValue("#searchBox", "beach"); await A.shot(path.join(SHOTS, "search-1280.png"), 1280, 900); await A.setValue("#searchBox", "towels"); }
+      await A.ev(`document.querySelector("#searchBox").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))`);
+      await sleep(400);
+      check("[search] Enter opens the plan in DayDream", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "planning" && (await A.ev(`document.querySelector("#page-plan").classList.contains("active") && !document.querySelector("#searchDlg").open`)) && /Beach trip/.test(await A.text("#planModal")), await A.text("#pageTitle"));
+      await A.press("Escape");
+      await A.click("#searchOpen");
+      await A.setValue("#searchBox", "vega");
+      await A.click("#searchResults .search-hit");
+      await sleep(300);
+      check("[search] a class hit switches back to StudyFlow and opens My Classes", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "school" && (await A.ev(`document.querySelector("#page-classes").classList.contains("active")`)));
+      await A.click("#searchOpen");
+      await A.setValue("#searchBox", "zebra");
+      check("[search] no match says so", /Nothing matches/.test(await A.text("#searchResults")));
+      await A.press("Escape");
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+      await sleep(250);
+      check("[search] phone: the search button is on screen and nothing scrolls sideways", await A.ev(`(() => { const r = document.querySelector("#searchOpen").getBoundingClientRect(); return r.width > 20 && r.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; })()`));
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    });
+
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
       const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
       await A.fresh(NEW, {});
