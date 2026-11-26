@@ -454,15 +454,15 @@ button.class-card{font:inherit;color:inherit;text-align:left;width:100%;cursor:p
 @media(max-width:1024px){.home-three{grid-template-columns:1fr}}
 @media(max-width:700px){.home-hero{padding:13px 14px;border-radius:15px;margin-bottom:8px;gap:10px}.home-hero h2{font-size:18px}.home-hero p{font-size:12px;margin-top:3px}.home-actions .btn{padding:7px 10px;font-size:12px}.home-grid{grid-template-columns:minmax(0,1fr);gap:8px;margin-bottom:8px}.home-three{gap:8px;margin-top:8px}.step{padding:8px 9px;gap:9px}.week{gap:3px}.week button{padding:6px 0;border-radius:10px}.week b{font-size:14px}}
 /* Sidebar: a workspace switcher under the logo, and pages grouped under section labels. On a phone the pages are a bar along the bottom that scrolls sideways. */
-#nav .label{margin:14px 0 6px}#nav .label:first-child{margin-top:0}
+
 .ws-switch{display:flex;gap:3px;padding:3px;margin:0 6px;border-radius:13px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--blue) 18%,var(--card-solid))}
 .ws-switch button{flex:1;border:0;background:transparent;color:var(--accent-ink);font:inherit;font-size:11.5px;font-weight:700;padding:7px 4px;border-radius:10px;cursor:pointer;transition:background .18s,box-shadow .18s}
 .ws-switch button.on{background:var(--card-solid);color:var(--ink);box-shadow:0 2px 6px color-mix(in srgb,var(--blue) 16%,transparent)}
 .ws-switch button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
-@media(min-width:701px) and (max-width:1024px){.ws-switch{flex-direction:column;margin:0}.ws-switch button{font-size:10px;padding:6px 0}#nav .label{display:block;height:1px;margin:8px 10px;padding:0;overflow:hidden;font-size:0;background:var(--line)}#nav .label:first-child{display:none}}
+@media(min-width:701px) and (max-width:1024px){.ws-switch{flex-direction:column;margin:0}.ws-switch button{font-size:10px;padding:6px 0}}
 @media(max-width:700px){aside{flex-direction:row;align-items:center;justify-content:space-between;backdrop-filter:none}.ws-switch{margin:0}.ws-switch button{padding:6px 9px;font-size:11px}
   #nav{position:fixed;left:0;right:0;bottom:0;z-index:3;display:flex;gap:2px;overflow-x:auto;padding:5px 8px calc(5px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--card-solid) 94%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);scrollbar-width:none}#nav::-webkit-scrollbar{display:none}
-  #nav .label{display:none}#nav .nav{flex:0 0 auto;min-width:60px;padding:4px 7px 5px}#nav .nav>span:last-child{max-width:none}main{padding-bottom:calc(76px + env(safe-area-inset-bottom))}.toast{bottom:84px}
+  #nav .nav{flex:0 0 auto;min-width:60px;padding:4px 7px 5px}#nav .nav>span:last-child{max-width:none}main{padding-bottom:calc(76px + env(safe-area-inset-bottom))}.toast{bottom:84px}
   .chat-shell{height:calc(100dvh - var(--chat-top,0px) - 70px - env(safe-area-inset-bottom))}}
 @media(prefers-reduced-transparency:reduce){[data-theme=lavender] .stat,[data-theme=lavender] .card,[data-theme=lavender] .class-card{background:var(--card-solid);backdrop-filter:none}}
 /* ---------- DayDream mode (workspace mode "planning"). While it is on, <html> carries data-theme="daydream" in place of the student's color design, so no design-specific rule applies and the saved design is untouched. The !important values beat the design colors that applyColors writes inline on <html>. ---------- */
@@ -1536,8 +1536,8 @@ const MODES={
   planning:{nav:[['Your space',['dashboard','plan','calendar']],['Organization',['checklists','budget']],['Memories',['journal']],['More',['assistant','settings']]],names:{dashboard:'Home',journal:'Digital Journal'},eyebrow:'DayDream',hint:'DayDream: your plans, checklists and journal, with the calendar. It has its own look, and your color design comes back in School and Work. School and work pages and the focus timer are hidden.'}};
 // Each workspace lists its pages in sidebar order, grouped under labels. A page it does not list is hidden there.
 const NAV_PAGES=$$('.nav[data-page]').map(b=>{b.dataset.label=b.lastElementChild.textContent;return b.dataset.page});Object.values(MODES).forEach(m=>{m.hide=NAV_PAGES.filter(p=>!m.nav.some(g=>g[1].includes(p)))});
-function showNav(m){const nav=$('#nav');$$('#nav .label').forEach(l=>l.remove());$$('.nav[data-page]').forEach(b=>{b.hidden=true});
-  m.nav.forEach(([name,pages])=>{const l=document.createElement('div');l.className='label';l.textContent=name.toUpperCase();nav.append(l);
+function showNav(m){const nav=$('#nav');$$('.nav[data-page]').forEach(b=>{b.hidden=true});
+  m.nav.forEach(([,pages])=>{
     pages.forEach(p=>{const b=$(`.nav[data-page="${p}"]`);b.hidden=p==='focus'&&focusOff();b.lastElementChild.textContent=m.names[p]||b.dataset.label;nav.append(b)})})}
 let mode='school';try{const v=localStorage.getItem(MKEY);if(MODES[v])mode=v}catch(e){}
 let chatMode=mode;

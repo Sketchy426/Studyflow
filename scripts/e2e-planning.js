@@ -1253,17 +1253,17 @@ async function main() {
     });
 
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
-      const groups = () => A.ev(`(() => { const out = []; for (const el of document.querySelector("#nav").children) { if (el.classList.contains("label")) out.push([el.textContent, []]); else if (!el.hidden) out[out.length - 1][1].push(el.lastElementChild.textContent); } return out; })()`);
+      const groups = () => A.ev(`[...document.querySelector("#nav").children].filter((el) => !el.hidden && el.getBoundingClientRect().height > 0).map((el) => el.matches(".nav[data-page]") ? el.lastElementChild.textContent : "?" + el.className + ":" + el.textContent)`);
       await A.fresh(NEW, {});
-      check("[shell] StudyFlow groups its pages under four labels", same(await groups(), [["OVERVIEW", ["Dashboard", "Calendar", "All Assignments"]], ["ACADEMICS", ["My Classes", "Grade Tracker", "Notes", "Flashcards"]], ["PRODUCTIVITY", ["Study Planner", "Focus Timer"]], ["OTHER", ["AI Study Assistant", "Settings"]]]), JSON.stringify(await groups()));
+      check("[shell] StudyFlow lists its pages in order with no headings between them", same(await groups(), ["Dashboard", "Calendar", "All Assignments", "My Classes", "Grade Tracker", "Notes", "Flashcards", "Study Planner", "Focus Timer", "AI Study Assistant", "Settings"]), JSON.stringify(await groups()));
       check("[shell] the switcher shows the current workspace", same(await A.ev(`[...document.querySelectorAll("#wsSwitch button")].map((b) => [b.textContent, b.getAttribute("aria-pressed")])`), [["School", "true"], ["Work", "false"], ["DayDream", "false"]]));
       await A.click('#wsSwitch [data-mode="planning"]');
       check("[shell] the switcher opens DayDream and saves it", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "planning" && (await A.text(".brand b")) === "DayDream");
-      check("[shell] DayDream groups its pages", same(await groups(), [["YOUR SPACE", ["Home", "My Plans", "Calendar"]], ["ORGANIZATION", ["Checklists", "Budget Planner"]], ["MEMORIES", ["Digital Journal"]], ["MORE", ["AI", "Settings"]]]), JSON.stringify(await groups()));
+      check("[shell] DayDream lists its pages with no headings", same(await groups(), ["Home", "My Plans", "Calendar", "Checklists", "Budget Planner", "Digital Journal", "AI", "Settings"]), JSON.stringify(await groups()));
       await A.nav("settings");
       check("[shell] the Settings switch agrees with the sidebar one", (await A.ev(`document.querySelector('#modeSeg [data-mode="planning"]').classList.contains("on")`)) === true);
       await A.click('#wsSwitch [data-mode="work"]');
-      check("[shell] Work groups its pages", same(await groups(), [["OVERVIEW", ["Dashboard", "Calendar"]], ["WORK", ["Work"]], ["OTHER", ["AI", "Settings"]]]), JSON.stringify(await groups()));
+      check("[shell] Work lists its pages with no headings", same(await groups(), ["Dashboard", "Calendar", "Work", "AI", "Settings"]), JSON.stringify(await groups()));
       await A.click('#wsSwitch [data-mode="school"]');
       for (const [w, h] of [[393, 852], [820, 1180], [1280, 900]]) {
         await A.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: w < 700 });
