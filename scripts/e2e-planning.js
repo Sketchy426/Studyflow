@@ -221,7 +221,8 @@ async function eventProbe(A, url, mode, seed) {
   out.calHead = [await A.text("#calSub"), await A.text("#addCalEvent"), await A.ev(`document.querySelector("#calLegend").innerText`)];
   await A.click("#addCalEvent");
   out.form1 = await form();
-  out.modalBox = await A.ev(`(() => { const s = getComputedStyle(document.querySelector("#modalBg .modal")); return [s.maxHeight, s.overflowY, s.borderRadius]; })()`);
+  // The form box now scrolls inside the screen (the old one could run off a small phone), so only its shape is compared with the old build.
+  out.modalBox = await A.ev(`(() => { const s = getComputedStyle(document.querySelector("#modalBg .modal")); return [s.borderRadius]; })()`);
   await A.setValue('#modalForm [name="title"]', "Probe A");
   await A.setValue('#modalForm [name="start"]', "15:00");
   await A.setValue('#modalForm [name="note"]', "Room 4");
@@ -788,12 +789,12 @@ async function main() {
       check("[notes] opening the hit shows the note", (await A.ev(`document.querySelector("#page-notes").classList.contains("active") && document.querySelector("#noteDlg").open`)) && (await A.value('#noteForm [name="text"]')) === "Keep, change, flip.");
       await A.click("#noteDelete");
       await A.click("#confirmYes");
-      check("[notes] deleting moves the note to Recently deleted", (await A.ls("studyflowNotes")).length === 4 && (await A.ls("studyflowTrash"))[0].kind === "note");
+      check("[notes] deleting moves the note to Recently deleted", (await A.ls("studyflowNotes")).filter((n) => !n.deleted).length === 4 && (await A.ls("studyflowTrash"))[0].kind === "note");
       await A.nav("settings");
       await A.click('[data-set-tab="data"]');
       check("[notes] the trash lists it as a Note", /Fractions <b>rules<\/b>\s*Note · deleted today/.test(await A.text("#trashList")), await A.text("#trashList"));
       await A.click("#trashList [data-restore]");
-      check("[notes] Restore brings the note back", (await A.ls("studyflowNotes")).some((n) => n.id === notes[2].id) && (await A.ls("studyflowNotes")).length === 5);
+      check("[notes] Restore brings the note back", (await A.ls("studyflowNotes")).some((n) => n.id === notes[2].id && !n.deleted) && (await A.ls("studyflowNotes")).length === 5);
       for (const m of ["work", "planning"]) { await A.click(`#wsSwitch [data-mode="${m}"]`); check(`[notes] ${m}: Notes is not in the sidebar`, await A.ev(`document.querySelector('.nav[data-page="notes"]').hidden`)); }
       await A.click('#wsSwitch [data-mode="school"]');
       await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
@@ -930,7 +931,7 @@ async function main() {
       check("[journal] a deleted memory keeps its extras while it is in Recently deleted", !!(await A.ls("studyflowMemoryMeta")).m2);
       await A.click(".toast-undo");
       check("[journal] and has them again when restored", /Pier 39/.test(await A.text('#memoryGrid [data-mem="m2"]')));
-      check("[journal] search finds a memory by its place", (await A.ev(`sfSearch("pier").map((h) => h.kind + ":" + h.title)`)).includes("Memory:Beach day <i>"));
+      check("[journal] search finds a memory by its place, once", same(await A.ev(`sfSearch("pier").map((h) => h.kind + ":" + h.title)`), ["Memory:Beach day <i>"]));
       await A.send("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
       await sleep(250);
       check("[journal] phone: the journal fits the screen", (await A.ev(`document.documentElement.scrollWidth - innerWidth`)) <= 0);
@@ -1108,6 +1109,147 @@ async function main() {
       await sleep(250);
       check("[week] phone: the page does not scroll sideways", (await A.ev(`document.documentElement.scrollWidth - innerWidth`)) <= 0);
       await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    });
+
+    await scenario("[reach] what opens can be seen and tapped", async () => {
+      // A control counts as reachable when it has a size, sits inside the screen, and is the thing a tap at its middle would land on.
+      const hit = (sel) => A.ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return "missing"; e.scrollIntoView({ block: "center" }); const r = e.getBoundingClientRect(); if (r.width < 8 || r.height < 8) return "no size " + Math.round(r.width) + "x" + Math.round(r.height); if (r.left < 0 || r.right > innerWidth + 1 || r.top < 0 || r.bottom > innerHeight + 1) return "off screen " + Math.round(r.top) + ".." + Math.round(r.bottom) + " of " + innerHeight; const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return t && (t === e || e.contains(t) || t.contains(e)) ? "ok" : "covered by " + (t ? t.tagName + "." + t.className : "nothing"); })()`);
+      const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+      const seed = { studyflowData: { v: 1, displayName: "", sessions: [], classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [], weights: {}, credits: 1 }], tasks: [{ id: 4001, title: "Sheet", classId: 2001, type: "Homework", due: day(1), points: 10, priority: "High", done: false }] },
+        studyflowEvents: [{ id: 81, title: "Lake trip", date: "2027-06-10", start: "", end: "", note: "", mode: "planning", type: "trip", place: "Lake", icon: "tent" }], studyflowMemories: [{ id: "m1", title: "Zoo day", date: "2027-05-01", mood: "", text: "Giraffes", tags: [], hasPhoto: false }] };
+      for (const [w, h] of [[1280, 900], [820, 1180], [393, 659]]) {
+        await A.send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: w < 700 });
+        await A.fresh(NEW, seed);
+        await A.nav("classes");
+        await A.tap('[data-class-open="2001"]');
+        await sleep(250);
+        check(`[reach] ${w}x${h}: the class view is on screen with its buttons`, (await hit("#classEdit")) === "ok" && (await hit("#classClose")) === "ok" && (await A.ev(`document.querySelector("#classDlg").getBoundingClientRect().width`)) > 250, `${await hit("#classEdit")} | ${await hit("#classClose")}`);
+        await A.tap("#classEdit");
+        check(`[reach] ${w}x${h}: the class form can be saved`, (await hit('#classForm button[type="submit"]')) === "ok", await hit('#classForm button[type="submit"]'));
+        await A.tap("#classBack");
+        await A.tap("#classDlg [data-note-new]");
+        await sleep(250);
+        check(`[reach] ${w}x${h}: a note started from a class opens on screen and can be saved`, (await hit('#noteForm button[type="submit"]')) === "ok" && (await hit('#noteForm [name="title"]')) === "ok", await hit('#noteForm button[type="submit"]'));
+        await A.tap("#noteCancel");
+        await A.tap('.nav[data-page="assignments"]');
+        check(`[reach] ${w}x${h}: after closing the dialogs the page takes taps again`, await A.ev(`document.querySelector("#page-assignments").classList.contains("active")`));
+        await A.tap("#addTask");
+        await sleep(250);
+        check(`[reach] ${w}x${h}: the assignment form's last field and its Save button can be reached`, (await hit('#modalForm [name="link"]')) === "ok" && (await hit('#modalForm button[type="submit"]')) === "ok" && (await hit("#cancel")) === "ok", `${await hit('#modalForm [name="link"]')} | ${await hit('#modalForm button[type="submit"]')}`);
+        await A.tap("#cancel");
+        await A.ev(`(() => { const s = document.querySelector("#dueFilter"); s.value = "all"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+        await A.tap('[data-details="4001"]');
+        await sleep(250);
+        check(`[reach] ${w}x${h}: the assignment details panel shows its step box and buttons`, (await hit("#subAdd input")) === "ok" && (await hit("#tdEdit")) === "ok" && (await hit("#tdClose")) === "ok", `${await hit("#subAdd input")} | ${await hit("#tdClose")}`);
+        await A.tap("#tdClose");
+        await A.tap("#searchOpen");
+        await sleep(200);
+        check(`[reach] ${w}x${h}: the search box is on screen`, (await hit("#searchBox")) === "ok", await hit("#searchBox"));
+        await A.press("Escape");
+        await sleep(150);
+        check(`[reach] ${w}x${h}: Escape closes search`, !(await A.ev(`document.querySelector("#searchDlg").open`)));
+        await A.ev(`document.querySelector("#searchDlg").close()`);
+        await A.tap('#wsSwitch [data-mode="planning"]');
+        await A.tap('.nav[data-page="plan"]');
+        await A.tap('#planGrid [data-plan-open="81"] .dd-plan-title');
+        // The "DayDream mode" message fades by itself after a few seconds; the check is about the panel, so it does not wait for that.
+        await A.ev(`document.querySelector("#toast").style.display = "none"`);
+        await A.ev(`document.querySelectorAll("#planModal .trip-sec").forEach((d) => { if (!d.open) d.querySelector("summary").click(); })`);
+        await sleep(250);
+        check(`[reach] ${w}x${h}: the plan panel's add boxes and Edit button can be reached`, (await hit('#planModal [data-trip-form="itin"] [name="title"]')) === "ok" && (await hit('#planModal [data-trip-form="budget"] button')) === "ok" && (await hit('#planModal [data-trip-info="travel"]')) === "ok" && (await hit("#planModal [data-plan-edit]")) === "ok", `${await hit('#planModal [data-trip-form="itin"] [name="title"]')} | ${await hit('#planModal [data-trip-form="budget"] button')} | ${await hit('#planModal [data-trip-info="travel"]')} | ${await hit("#planModal [data-plan-edit]")}`);
+        await A.press("Escape");
+        await A.tap('.nav[data-page="journal"]');
+        await A.tap('#memoryGrid [data-memory-edit="m1"]');
+        await sleep(250);
+        check(`[reach] ${w}x${h}: the memory form can be saved`, (await hit('#memForm button[type="submit"]')) === "ok" && (await hit('#memForm [name="album"]')) === "ok", await hit('#memForm button[type="submit"]'));
+        await A.tap("#memCancel");
+      }
+      await A.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    });
+
+    await scenario("[fixes] problems found by the independent review stay fixed", async () => {
+      await A.fresh(NEW, { studyflowData: { v: 1, displayName: "", sessions: [], classes: [{ id: 2001, name: "Math", teacher: "", icon: "M", grades: [], weights: {}, credits: 1 }], tasks: [{ id: 4001, title: "Sheet", classId: 2001, type: "Homework", due: "2027-01-05", points: 10, priority: "High", done: false }] },
+        studyflowEvents: [{ id: 81, title: "Lake trip", date: "2027-06-10", start: "", end: "", note: "", mode: "planning", type: "trip", place: "Lake", icon: "tent" }],
+        studyflowMemories: [{ id: "m1", title: "Zoo day", date: "2027-05-01", mood: "", text: "Giraffes", tags: [], hasPhoto: false }], studyflowMemoryMeta: { m1: { loc: "City zoo", album: "Spring" }, gone: { fav: true } },
+        studyflowTrips: { 81: { info: {}, itin: [], budget: { limit: 0, items: [{ id: "b1", name: "Cabin", cat: "Stay", est: 100, act: "" }] }, guests: [] }, 999: { info: { stay: "nowhere" }, itin: [], budget: { limit: 0, items: [] }, guests: [] } },
+        studyflowNotes: [{ id: "n1", title: "My note", topic: "", text: "Keep me", classId: 2001, at: 1 }] });
+      await A.nav("notes");
+      await A.click('[data-note-open="n1"]');
+      await A.click("#noteDelete");
+      await A.click("#confirmYes");
+      const kept = (await A.ls("studyflowNotes"))[0];
+      check("[fixes] a deleted note stays in its collection, marked deleted, with only a pointer in Recently deleted", kept.id === "n1" && kept.text === "Keep me" && kept.deleted > 0 && same((await A.ls("studyflowTrash"))[0].data, { id: "n1" }) && /No notes yet/.test(await A.text("#noteGrid")) && (await A.ev(`sfSearch("keep").length`)) === 0);
+      await A.load(OLD);
+      await sleep(500);
+      await A.ev(`(() => { const go = [...document.querySelectorAll('[data-set-tab="data"], .nav[data-page="settings"]')]; document.querySelector('.nav[data-page="settings"]').click(); document.querySelector('[data-set-tab="data"]')?.click(); })()`);
+      await sleep(200);
+      await A.ev(`document.querySelector("#trashList [data-restore]")?.click()`);
+      await sleep(300);
+      const afterOld = { notes: await A.ls("studyflowNotes"), trash: (await A.ls("studyflowTrash")) || [] };
+      await A.load(NEW);
+      await A.nav("notes");
+      check("[fixes] restoring it on the older build does not destroy it: the note is back on this build", (await A.ls("studyflowNotes")).length === 1 && !("deleted" in (await A.ls("studyflowNotes"))[0]) && same(await A.texts("#noteGrid .note-card b"), ["My note"]), JSON.stringify(afterOld));
+      await A.click('[data-note-open="n1"]');
+      await A.click("#noteDelete");
+      await A.click("#confirmYes");
+      await A.nav("settings");
+      await A.click('[data-set-tab="data"]');
+      await A.click("#trashList [data-restore]");
+      check("[fixes] Restore on this build brings the note back too", !("deleted" in (await A.ls("studyflowNotes"))[0]) && (await A.ls("studyflowTrash")).length === 0);
+      await A.ev(`localStorage.setItem("studyflowNotes", JSON.stringify([{ id: "old", title: "Ancient", topic: "", text: "x", classId: null, at: 1, deleted: Date.now() - 31 * 864e5 }, ...JSON.parse(localStorage.getItem("studyflowNotes"))]))`);
+      await A.reload();
+      check("[fixes] a note deleted more than 30 days ago is removed for good", same((await A.ls("studyflowNotes")).map((n) => n.id), ["n1"]));
+      await sleep(2300);
+      check("[fixes] planning and journal extras whose plan or memory is gone are cleaned up, and the rest are kept", same(Object.keys(await A.ls("studyflowTrips")), ["81"]) && same(Object.keys(await A.ls("studyflowMemoryMeta")), ["m1"]));
+      check("[fixes] a memory shows once in search, and its place and album are searched", same(await A.ev(`["zoo", "spring"].map((q) => sfSearch(q).map((h) => h.kind + ":" + h.title).join("|"))`), ["Memory:Zoo day", "Memory:Zoo day"]), JSON.stringify(await A.ev(`["zoo", "spring"].map((q) => sfSearch(q).map((h) => h.kind + ":" + h.title).join("|"))`)));
+      await A.click('#wsSwitch [data-mode="planning"]');
+      await A.nav("plan");
+      await A.click('[data-plan-open="81"] .dd-plan-title');
+      await A.ev(`document.querySelectorAll("#planModal .trip-sec").forEach((d) => { if (!d.open) d.querySelector("summary").click(); })`);
+      await A.setValue('#planModal [data-trip-form="itin"] [name="title"]', "Half typed stop");
+      await A.setValue('#planModal [data-trip-form="budget"] [name="name"]', "Half typed expense");
+      await A.setValue('#planModal [data-trip-form="guests"] [name="name"]', "Mia");
+      await A.submit('#planModal [data-trip-form="guests"]');
+      check("[fixes] adding a guest keeps what is half typed in the other add boxes and clears only its own", (await A.value('#planModal [data-trip-form="itin"] [name="title"]')) === "Half typed stop" && (await A.value('#planModal [data-trip-form="budget"] [name="name"]')) === "Half typed expense" && (await A.value('#planModal [data-trip-form="guests"] [name="name"]')) === "" && (await A.ev(`document.activeElement.name === "name" && !!document.activeElement.closest('[data-trip-form="guests"]')`)));
+      await A.tap('#planModal [data-trip-info="people"]');
+      await A.type("Family");
+      await A.press("Tab");
+      await sleep(200);
+      check("[fixes] Tab out of a trip detail saves it and keeps the cursor in the next field", (await A.ls("studyflowTrips"))["81"].info.people === "Family" && (await A.ev(`document.activeElement.dataset.tripInfo || document.activeElement.tagName`)) === "stay", await A.ev(`document.activeElement.dataset.tripInfo || document.activeElement.tagName`));
+      await A.setValue('#planModal [data-trip-act="b1"]', "80");
+      await A.ev(`document.querySelector('#planModal [data-trip-act="b1"]').dispatchEvent(new Event("change", { bubbles: true }))`);
+      await sleep(150);
+      check("[fixes] changing what was spent keeps a half-typed expense", (await A.value('#planModal [data-trip-form="budget"] [name="name"]')) === "Half typed expense" && (await A.ls("studyflowTrips"))["81"].budget.items[0].act === 80);
+      await A.ev(`dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }))`);
+      await A.setValue("#searchBox", "sheet");
+      await A.click("#searchResults .search-hit");
+      await sleep(300);
+      check("[fixes] opening a search hit from an open plan closes the plan first", (await A.ev(`localStorage.getItem("studyflowMode")`)) === "school" && !(await A.ev(`document.querySelector("#planBg").classList.contains("show")`)) && (await A.ev(`document.querySelector("#page-assignments").classList.contains("active")`)));
+      const evil = '"><img src=x onerror="window.__xss=(window.__xss||0)+1">';
+      await A.ev(`(() => { const e = ${JSON.stringify(evil)}; localStorage.setItem("studyflowNotes", JSON.stringify([{ id: e, title: e, topic: e, text: e, classId: 2001, at: 5 }])); localStorage.setItem("studyflowTrips", JSON.stringify({ 81: { info: { stay: e }, itin: [{ id: e, day: "", time: "", title: e }], budget: { limit: 0, items: [{ id: e, name: e, cat: "Other", est: 1, act: 1 }] }, guests: [{ id: e, name: e, rsvp: "yes" }] } })); const d = JSON.parse(localStorage.getItem("studyflowData")); d.tasks[0].subs = [{ id: e, title: e, done: false }]; d.tasks[0].notes = e; d.classes[0].name = e; d.classes[0].color = e; localStorage.setItem("studyflowData", JSON.stringify(d)); localStorage.setItem("studyflowMemoryMeta", JSON.stringify({ m1: { loc: e, album: e, caption: e, extra: ["m1#" + e] } })); })()`);
+      await A.reload();
+      for (const p of ["dashboard", "classes", "notes", "assignments"]) await A.nav(p);
+      await A.ev(`(() => { const s = document.querySelector("#dueFilter"); s.value = "all"; s.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+      await A.click("#assignmentList [data-details]");
+      await A.click("#tdClose");
+      await A.nav("classes");
+      await A.click("[data-class-open]");
+      await A.click("#classClose");
+      await A.click('#wsSwitch [data-mode="planning"]');
+      for (const p of ["journal", "budget", "plan"]) await A.nav(p);
+      await A.click('[data-plan-open="81"] .dd-plan-title');
+      await A.ev(`document.querySelectorAll("#planModal .trip-sec").forEach((d) => { if (!d.open) d.querySelector("summary").click(); })`);
+      await A.ev(`sfSearch("img")`);
+      await sleep(500);
+      check("[fixes] ids and text from storage cannot run as code on any page that shows them", (await A.ev(`window.__xss || 0`)) === 0 && (await A.count("img[src=x]")) === 0, String(await A.ev(`window.__xss || 0`)));
+      await A.press("Escape");
+      await A.ev(`localStorage.setItem("sfLocal.look", '"dark"'); localStorage.setItem("sfLocal.calAlso", '{"work":true}')`);
+      await A.nav("settings");
+      await A.click('[data-set-tab="data"]');
+      await A.click("#resetAll");
+      await A.click("#resetAll");
+      await sleep(2500);
+      check("[fixes] Delete all data also clears this device's settings", (await A.ev(`Object.keys(localStorage).filter((k) => k.startsWith("sfLocal.")).length`)) === 0 && (await A.ev(`document.documentElement.dataset.dark === undefined`)));
     });
 
     await scenario("[shell] grouped sidebar and a workspace switcher", async () => {
